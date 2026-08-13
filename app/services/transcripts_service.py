@@ -1,2 +1,2 @@
-async def clean_transcript():
-    pass
+async def clean_transcript(raw_transcript: str):
+    return raw_transcript
