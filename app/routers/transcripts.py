@@ -1,8 +1,9 @@
 '''
 --- Transcrições ---
+POST   /transcripts/process         # extração via Gemini (faz a limpeza e extração de infos com AI)
+
+-- JAVA --
 POST   /transcripts                      # upload da transcrição (JSON/CSV)
-POST   /transcripts/{id}/clean           # limpeza (pandas) -> ou automático dentro do upload
-POST   /transcripts/{id}/process         # extração via Gemini
 GET    /transcripts/{id}                 # detalhe + resultado da extração
 GET    /transcripts                      # lista (filtros: ?userId=, ?dateFrom=, etc.)
 GET    /transcripts/{id}/scores          # scores (performance + estratégico juntos)
@@ -10,5 +11,5 @@ GET    /transcripts/{id}/scores          # scores (performance + estratégico ju
 
 from fastapi import APIRouter
 
-router = APIRouter("transcript");
+router = APIRouter();
 
