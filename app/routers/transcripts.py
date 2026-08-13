@@ -5,12 +5,12 @@ POST   /transcripts/process         # extração via Gemini (faz a limpeza e ext
 
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
-from services import gemini_client_service as gen, transcripts_service as trs
-from models.transcripts_models import TranscriptAnalyse
+from app.services import gemini_client_service as gen, transcripts_service as trs
+from app.models.transcripts_models import TranscriptAnalyse
      
 router = APIRouter();
 
-@router.post("/process", response_model=JSONResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/process", status_code=status.HTTP_201_CREATED)
 async def process_transcript(transcript: str) -> JSONResponse:
     try:
         cleaned_text = trs.clean_transcript(transcript)

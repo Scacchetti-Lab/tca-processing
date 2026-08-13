@@ -7,7 +7,7 @@ app = FastAPI(
     title="Totvs Commercial AI - Processing",
     version="1"
 )
-app.add_middleware(GZipMiddleware, minimum_size=1000)  # comprime respostas acima de 1KB
+# app.add_middleware(GZipMiddleware, minimum_size=1000)  # comprime respostas acima de 1KB
 # app.add_middleware(app_middleware)
 
 @app.get("/")
