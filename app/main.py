@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from app.routers import chats, transcripts
 from starlette.middleware.gzip import GZipMiddleware
-from middleware import app_middleware
+# from middleware import app_middleware
 
 app = FastAPI(
     title="Totvs Commercial AI - Processing",
@@ -11,6 +11,7 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)  # comprime respostas acim
 # app.add_middleware(app_middleware)
 
 @app.get("/")
+@app.get("/health-check")
 def root():
     return {"status": "Ok", "project": "Totvs Commercial AI - Processing", "version": "1.0.0"}
 

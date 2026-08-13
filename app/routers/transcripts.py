@@ -10,6 +10,13 @@ GET    /transcripts/{id}/scores          # scores (performance + estratégico ju
 '''
 
 from fastapi import APIRouter
+from fastapi.exception_handlers import (
+    http_exception_handler,
+    request_validation_exception_handler,
+)
 
 router = APIRouter();
 
+@router.post("/process")
+async def process_transcript():
+    pass
