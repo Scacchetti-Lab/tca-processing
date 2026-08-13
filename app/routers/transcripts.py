@@ -10,10 +10,10 @@ from models.transcripts_models import TranscriptAnalyse
      
 router = APIRouter();
 
-@router.post("/process", status_code=status.HTTP_201_CREATED)
+@router.post("/process", response_model=JSONResponse, status_code=status.HTTP_201_CREATED)
 async def process_transcript(transcript: str) -> JSONResponse:
     try:
-        cleaned_text = await trs.clean_transcript(transcript)
+        cleaned_text = trs.clean_transcript(transcript)
         gen_analysed = await gen.analyse_transcript(cleaned_text)
 
         if (TranscriptAnalyse.model_validate(gen_analysed) == None):

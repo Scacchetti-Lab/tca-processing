@@ -5,7 +5,6 @@ from constants.transcript import COMPANY_STATUS, FINANCIAL_STATUS, INSIGHT_PRIOR
 class TranscriptAnalyse(__BaseModel):
     status: TRANSCRIPT_STATUS
     type: TRANSCRIPT_TYPE
-    score: int
     score_type: SCORE_TYPE
     basic_description: __TranscriptDescription
     analytic: __AnalayseStrategicDefinitions | __AnalayseCustomerDefinitions
@@ -27,13 +26,18 @@ class __TranscriptDescription(__BaseModel):
 class __AnalayseStrategicDefinitions(__BaseModel):
     employees_performance: float
     company_status: COMPANY_STATUS
-    company_performance: float
-    risk: float
+    company_performance: float          
+    closing_probability: float          
+    problem_understanding: float        
+    risk: float                         
     finacial_impact: float
     finacial_impact_status: FINANCIAL_STATUS
 
 class __AnalayseCustomerDefinitions(__BaseModel):
-    opportunities_seized: float
-    converted_potencials: float
+    engagement: float                   
+    opportunities_seized: float         
+    communication_quality: float        
+    objection_handling: float           
+    converted_potencials: float         
     leads_converted: int
     tips: str
