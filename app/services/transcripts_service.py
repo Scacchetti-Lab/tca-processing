@@ -5,6 +5,7 @@ _RE_MULTI_NEWLINE = re.compile(r'\n{2,}')
 _RE_SPACES_TABS = re.compile(r'[ \t]+')
 _RE_SPACE_AROUND_NEWLINE = re.compile(r' *\n *')
 _RE_TAG_BLOCK_REPEAT = re.compile(r'((?:\[[A-ZÀ-Ú_ ]+\][.,]?\s*)+?)\1+')
+_RE_COLLPASED_TAGS = re.compile(r'(\[[A-ZÀ-Ú_ ]+\])(?:[.,]?\s*\1)+')
 _RE_LOCUTOR_TAG = re.compile(r'\[LOCUTOR \d+\]:')
 _RE_ANON_TAG = re.compile(r'\[[A-ZÀ-Ú_ ]+\]')
 
@@ -29,6 +30,7 @@ def clean_transcript(raw_transcript: str) -> str:
     cleaned_txt = _RE_MULTI_NEWLINE.sub('\n', cleaned_txt)
     cleaned_txt = _RE_SPACES_TABS.sub(' ', cleaned_txt)
     cleaned_txt = _RE_SPACE_AROUND_NEWLINE.sub('\n', cleaned_txt)
+    cleaned_txt = _RE_COLLPASED_TAGS.sub(r'\1', cleaned_txt)
 
     cleaned_txt = clean(
         cleaned_txt,

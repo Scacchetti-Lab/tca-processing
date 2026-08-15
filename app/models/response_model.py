@@ -1,4 +1,10 @@
 from typing_extensions import Self
+from pydantic import BaseModel
+
+class ResponseBaseModel(BaseModel):
+    status: int
+    message: str
+    is_valid: bool
 
 
 class ResponseModel:
