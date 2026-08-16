@@ -2,29 +2,48 @@ import pandas as pd
 from os import getcwd
 from app.services import transcripts_service as trs, gemini_client_service as gen
 from app.models.transcripts_models import TranscriptAnalyse
+from app.models.response_model import ResponseModel
 from fastapi import status, HTTPException
 from pydantic import ValidationError
+import json
 
 def main():
+    print('\033[1;34m[INICIO] Processo de analise de transcrição!!\033[m\n\n')
     df = pd.read_csv(f'{getcwd().replace('\\', '/')}/assets/anon_transcription.csv')
-    transcript = df['ANON_TRANSCRICAO'].tolist()[0]
-    print('\n\033[1;93m[EM ANDAMENTO] Analisando e Limpando Transcrição\033[m')
-    cleaned_transcript = trs.clean_transcript(transcript)
-    print('\033[1;32m[CONCLUÍDO] Analise e limpeza de transcrição!\033[m')
+    transcripts = df['ANON_TRANSCRICAO'].head(5).tolist()
     try:
+        print('\n\033[1;93m[EM ANDAMENTO] Analisando e Limpando Transcrição\033[m')
+        cleaned_transcripts = trs.clean_transcripts_batch(transcripts)
+        print('\033[1;32m[CONCLUÍDO] Analise e limpeza de transcrição!\033[m')
+
+
         print('\n\n\033[1;93m[EM ANDAMENTO] Analise do Gemini 3.6 Flash...\033[m')
-        response = gen.analyse_transcript(cleaned_transcript)
+        analyzes: dict[str, ResponseModel] = {}
+        for ct in cleaned_transcripts:
+            key: str = str(df['ID_MEETING'])
+            analyzes[key] = gen.analyse_transcript(ct)
         print('\033[1;32m[CONCLUÍDO] Analise do Gemini 3.6 Flash!\033[m')
 
-        if (response.status != status.HTTP_200_OK):
-            raise HTTPException(
-                status_code=response.status,
-                detail=response.message
-            )
-        transcript_analyzed = TranscriptAnalyse.model_validate_json(response.message)
+        print('\n\n\033[1;93m[EM ANDAMENTO] Convertendo dados...\033[m')
+        responses: dict[str, TranscriptAnalyse] = {}
+        for key, ct in analyzes.items():
+            if ct.status != status.HTTP_200_OK:
+                raise HTTPException(
+                    status_code=ct.status,
+                    detail=ct.message
+                ) 
+            responses[key] = TranscriptAnalyse.model_validate_json(ct.message)
+        print('\033[1;32m[CONCLUÍDO] Conversão de dados!\033[m')
 
-        print(transcript_analyzed)
 
+        print('\n\n\033[1;93m[EM ANDAMENTO] Escrevendo arquivo...\033[m')
+        with open('analise_ia.json', 'w') as file:
+            result = json.dumps(responses)
+            file.write(result)
+        print('\033[1;32m[CONCLUÍDO] Arquivo escrito com sucesso!\033[m')
+
+        print('\n\n\033[1;34m[ENCERRADO] Processo finalizado!!\033[m')
+            
     except HTTPException as httpex:
         print('\033[1;31m[FALHA] Ocorreu algum problema no processo...\033[m')
         print(httpex.status_code)
@@ -46,8 +65,7 @@ if __name__ == "__main__":
     main()
 
 '''
-
-PRIMEIRA ANALISE DA IA
+PRIMEIRA ANALISE DA IA - EXEMPLO RESULTADO REAL
 
 status='OK' 
 type='SALER' 
