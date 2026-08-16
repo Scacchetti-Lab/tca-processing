@@ -2,7 +2,7 @@ from os import getenv as __getenv
 from dotenv import load_dotenv as __load_dotenv
 from google import genai as __genai
 from google.genai.interactions import Interaction
-from app.constants.ai_context import FEEDBACK_TONES as _FEEDBACK_TONES, TRANSCRIPT_CONTEXT as _TRANSCRIPT_CONTEXT
+from app.constants.ai_context import TRANSCRIPT_CONTEXT as _TRANSCRIPT_CONTEXT
 from app.models.chats_models import InteractionCreateModel as __InteractionCreateModel
 from app.models.transcripts_models import TranscriptAnalyse
 from app.models.response_model import ResponseModel
@@ -21,7 +21,7 @@ def analyse_transcript(transcript: str) -> ResponseModel:
 
         return ResponseModel(
                 status=status.HTTP_200_OK,
-                message=transcript_analysed.model_dump_json(),
+                content=transcript_analysed.model_dump(mode='json'),
                 is_valid=True
             )
     except Exception as ex:
@@ -34,10 +34,16 @@ def analyse_transcript(transcript: str) -> ResponseModel:
 async def send_message(user_message: str, previous_interaction_id: str | None = None):
     pass
 
-async def generate_feedback(transcript: str, tone: _FEEDBACK_TONES):
+async def get_feedback_by_meeting_id(id: str):
+    '''Retorna o Feedback gerado na analíse da transcrição com base em um Id especificado'''
     pass
 
-async def generate_prediction(last_transcript: str):
+async def generate_client_prediction(client_id: str):
+    '''Gera uma previsão sobre o cliente partindo do ID especificado e o que esperar de seu futuro com a empresa'''
+    pass
+
+async def generate_meeting_prediction(transcript_id: str):
+    '''Gera uma previsão sobre a reunião a seguir partindo do ID especificado e o que esperar de seu futuro com a empresa'''
     pass
 
 def _create_simple_interactor(request: str, context: str) -> TranscriptAnalyse:

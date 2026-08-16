@@ -30,9 +30,9 @@ def main():
             if ct.status != status.HTTP_200_OK:
                 raise HTTPException(
                     status_code=ct.status,
-                    detail=ct.message
+                    detail=ct.content
                 ) 
-            responses[key] = TranscriptAnalyse.model_validate_json(ct.message)
+            responses[key] = TranscriptAnalyse.model_validate(ct.content)
         print('\033[1;32m[CONCLUÍDO] Conversão de dados!\033[m')
 
 

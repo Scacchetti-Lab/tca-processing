@@ -3,12 +3,14 @@ from pydantic import BaseModel
 
 class ResponseBaseModel(BaseModel):
     status: int
+    content: dict[str, str]
     message: str
     is_valid: bool
 
 
 class ResponseModel:
-    def __init__(self, status: int, message: str, is_valid: bool = False) -> None:
+    def __init__(self, status: int, content: dict[str, str] | None = None, message: str = '', is_valid: bool = False) -> None:
         self.status = status
+        self.content = content
         self.message = message
         self.is_valid = is_valid

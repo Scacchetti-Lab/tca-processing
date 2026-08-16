@@ -6,28 +6,113 @@ POST   /transcripts/process         # extração via Gemini (faz a limpeza e ext
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
 from app.services import gemini_client_service as gen, transcripts_service as trs
-from app.models.transcripts_models import TranscriptAnalyse
+from app.models.transcripts_models import TranscriptAnalyse, TranscriptDescription, Insights, AnalayseCustomerDefinitions
+from app.models.response_model import ResponseModel, ResponseBaseModel
+import traceback
+from pydantic import ValidationError
      
 router = APIRouter();
 
-@router.post("/process", status_code=status.HTTP_201_CREATED)
-async def process_transcript(transcript: str) -> JSONResponse:
-    try:
-        cleaned_text = trs.clean_transcript(transcript)
-        gen_analysed = await gen.analyse_transcript(cleaned_text)
+seed_test = TranscriptAnalyse(
+    status='OK',
+    type='SALER',
+    score_type='PERFORMANCE',
+    basic_description=TranscriptDescription(
+        company_name='[EMPRESA] (Cliente do Segmento de Saúde)',
+        company_representor='TOTVS (Engenharia de Vendas e Comercial)',
+        duration_min=60,
+        stakeholders=[
+            'Locutor 102 (Engenharia de Vendas - TOTVS)',
+            'Locutor 49 (Comercial - TOTVS)',
+            'Locutor 3 ([PESSOA] Mesquita - Gerente de RH/DP)',
+            'Locutor 72 ([PESSOA] - Supervisor de Operações/RH)',
+            'Locutor 63 ([PESSOA] - TI/Infraestrutura)',
+        ],
+        meeting_summary=(
+            'Reunião de apresentação comercial e demonstração técnica dos módulos Meu RH e Ponto da TOTVS '
+            'para cliente do setor hospitalar/saúde (folha de aproximadamente 10 mil colaboradores). '
+            'O cliente busca substituir um portal interno de ponto e necessita entender o funcionamento '
+            'do sistema focado no perfil de gestor, incluindo controle de ponto, fluxos de aprovação de '
+            'horas extras, relatórios e integração/homologação de atestados médicos com o SESMT. Houve um '
+            'desalinhamento prévio, pois a apresentação foi focada na visão do colaborador. A equipe comercial '
+            'assumiu o compromisso de coletar os requisitos específicos e agendar uma nova sessão com a '
+            'Engenharia de Valor antes do dia 24 de março.'
+        ),
+        insights=Insights(
+            priority='HIGH',
+            comment=(
+                'A evolução da compra do módulo Meu RH/Ponto depende da realização de uma nova demonstração '
+                'focada na visão do gestor e do esclarecimento das regras de negócio (homologação de atestados '
+                'pelo SESMT e aprovações de horas extras pelo DP) até o dia 24 de março.'
+            ),
+            grade=8,
+        ),
+    ),
+    analytic=AnalayseCustomerDefinitions(
+        engagement=8.0,
+        opportunities_seized=6.5,
+        communication_quality=7.5,
+        objection_handling=7.0,
+        converted_potencials=6.0,
+        leads_converted=0,
+        tips=(
+            'Antes de reuniões de demonstração, realize um alinhamento prévio minucioso sobre o escopo desejado '
+            '(ex: visão do gestor vs. visão do colaborador) e resgate o histórico comercial do cliente. Ao '
+            'identificar demandas técnicas complexas e customizações de processo (como SESMT e relatórios '
+            'específicos de horas extras), acione prontamente a Engenharia de Valor para preparar um ambiente '
+            'personalizado.'
+        ),
+    ),
+    feedback=(
+        'A reunião evidenciou um forte interesse do cliente em contratar as soluções de ponto e autosserviço '
+        'da TOTVS para sua operação de 10.000 funcionários. No entanto, o cliente expressou frustração com o '
+        'histórico de trocas no atendimento comercial e pela apresentação não ter atendido de imediato à sua '
+        'principal necessidade: a gestão sob a perspectiva do gestor. O risco de estagnação da negociação é '
+        'moderado se o prazo não for cumprido. Como próximo passo acionável, a equipe comercial deve organizar '
+        'os requisitos recebidos do cliente, acionar a Engenharia de Valor e realizar a nova demonstração '
+        'técnica antes de 24 de março.'
+    ),
+)
 
-        if (TranscriptAnalyse.model_validate(gen_analysed) == None):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUES, detail='Falha no retorno do processamento da transcrição')
+@router.post("/process", response_model=ResponseBaseModel, status_code=status.HTTP_201_CREATED)
+async def process_transcript(transcript_id: str) -> JSONResponse:
+    try:
+        transcript = trs.get_transcript_by_id(transcript_id)
+
+        if transcript is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='O ID fornecido é incorreto.'
+            )
+        cleaned_text = trs.clean_transcript(transcript)
+        gen_analysed = gen.analyse_transcript(cleaned_text)
+        TranscriptAnalyse.model_validate(gen_analysed.content) 
 
         return JSONResponse(
             status_code=status.HTTP_201_CREATED,
-            content=gen_analysed,
+            content=gen_analysed.__dict__,
             media_type="application/json"
+        )
+
+    except ValidationError as vex:
+        print(vex)
+        print(traceback.format_exc())
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content=ResponseModel(status=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Erro ao obter transcrição analisada pela IA").__dict__
+        )
+    except HTTPException as httpex:
+        print(httpex)
+        print(traceback.format_exc())
+        return JSONResponse(
+            status_code=httpex.status_code,
+            content=ResponseModel(status=httpex.status_code, message=httpex.detail, is_valid=False).__dict__
         )
     except Exception as ex:
         print(f'\033[1;31m[ERRO] {ex}\033[m')
+        print(traceback.format_exc())
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={"status": status.HTTP_500_INTERNAL_SERVER_ERROR, "message": "Ocorreu um erro inesperado durante o processamento" },
+            content=ResponseModel(status=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Ocorreu um erro inesperado durante o processamento").__dict__,
             media_type="application/json"
         )

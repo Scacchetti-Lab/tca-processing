@@ -1,17 +1,35 @@
-import re
-from cleantext import clean
+import re as _re
+from cleantext import clean as __clean
+import pandas as _pd
+from os import getcwd as _getcwd
 
-_RE_MULTI_NEWLINE = re.compile(r'\n{2,}')
-_RE_SPACES_TABS = re.compile(r'[ \t]+')
-_RE_SPACE_AROUND_NEWLINE = re.compile(r' *\n *')
-_RE_TAG_BLOCK_REPEAT = re.compile(r'((?:\[[A-ZÀ-Ú_ ]+\][.,]?\s*)+?)\1+')
-_RE_COLLPASED_TAGS = re.compile(r'(\[[A-ZÀ-Ú_ ]+\])(?:[.,]?\s*\1)+')
-_RE_LOCUTOR_TAG = re.compile(r'\[LOCUTOR \d+\]:')
-_RE_ANON_TAG = re.compile(r'\[[A-ZÀ-Ú_ ]+\]')
+_RE_MULTI_NEWLINE = _re.compile(r'\n{2,}')
+_RE_SPACES_TABS = _re.compile(r'[ \t]+')
+_RE_SPACE_AROUND_NEWLINE = _re.compile(r' *\n *')
+_RE_TAG_BLOCK_REPEAT = _re.compile(r'((?:\[[A-ZÀ-Ú_ ]+\][.,]?\s*)+?)\1+')
+_RE_COLLPASED_TAGS = _re.compile(r'(\[[A-ZÀ-Ú_ ]+\])(?:[.,]?\s*\1)+')
+_RE_LOCUTOR_TAG = _re.compile(r'\[LOCUTOR \d+\]:')
+_RE_ANON_TAG = _re.compile(r'\[[A-ZÀ-Ú_ ]+\]')
 
 _LOCUTOR_PLACEHOLDER = "§LOC{}§"
 _ANON_PLACEHOLDER = "§ANON{}§"
 
+
+def get_transcript_by_id(id: str) -> str | None :
+    ''''Partindo de um Id especificado, retorne a transcrição'''
+
+    if (not str.isnumeric(id)):
+        return None
+
+    # Código abaixo só para testes até o SQL não ser implementado
+    df = _pd.read_json(f'{_getcwd()}/assets/anon_transcription.json')
+    df_trs = df[df['ID_MEETING'] == int(id)]
+
+    print(df_trs.info())
+    if df_trs.empty: 
+        return None
+
+    return str(df_trs['ANON_TRANSCRICAO'].values[0])
 
 def clean_transcript(raw_transcript: str) -> str:
     if not raw_transcript or not raw_transcript.strip():
@@ -32,7 +50,7 @@ def clean_transcript(raw_transcript: str) -> str:
     cleaned_txt = _RE_SPACE_AROUND_NEWLINE.sub('\n', cleaned_txt)
     cleaned_txt = _RE_COLLPASED_TAGS.sub(r'\1', cleaned_txt)
 
-    cleaned_txt = clean(
+    cleaned_txt = __clean(
         cleaned_txt,
         fix_unicode=True,
         to_ascii=False,        
