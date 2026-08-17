@@ -1,7 +1,7 @@
 from typing import Literal as __Literal
 
 TRANSCRIPT_STATUS = __Literal['OK', 'ANALYZING', 'ERROR']
-TRANSCRIPT_TYPE = __Literal['SALER', 'DIRECTOR']
+TRANSCRIPT_TYPE = __Literal['SALESPERSON', 'DIRECTOR']
 SCORE_TYPE = __Literal['PERFORMANCE', 'STRATEGIC']
 INSIGHT_PRIORITY = __Literal["HIGH", "LOW", "MEDIUM"]
 COMPANY_STATUS = __Literal["GOOD", "CRITIC", "BAD", "OK"]

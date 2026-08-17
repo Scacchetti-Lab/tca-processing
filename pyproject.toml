@@ -12,4 +12,5 @@ dependencies = [
     "rich>=13.7.1",
     "scikit-learn>=1.9.0",
     "spacy>=3.8.13",
+    "sqlmodel>=0.0.39",
 ]
