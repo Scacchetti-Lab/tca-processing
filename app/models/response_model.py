@@ -3,8 +3,8 @@ from pydantic import BaseModel
 
 class ResponseBaseModel(BaseModel):
     status: int
-    content: dict[str, str]
-    message: str
+    content: dict[str, str] | None
+    message: str | None
     is_valid: bool
 
 
