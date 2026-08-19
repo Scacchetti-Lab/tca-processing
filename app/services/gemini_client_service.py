@@ -7,6 +7,8 @@ from app.models.chats_models import ChatBotResponse as _ChatBotResponse
 from app.models.transcripts_models import TranscriptAnalyse
 from app.models.response_model import ResponseModel
 from fastapi import status
+from typing import Literal
+from app.helper.create_context import build_extraction_system_instruction
 
 __load_dotenv()
 
@@ -78,11 +80,12 @@ async def generate_meeting_prediction(meeting_id: str):
         is_valid=True
     )
 
-def _create_transcript_interactor(request: str) -> TranscriptAnalyse:
+def _create_transcript_interactor(request: str, context_type: Literal['simple', 'complex'] = 'complex') -> TranscriptAnalyse:
     '''Cria um interactor custom e próprio para analíse de transcrições, sendo necessário informar:\n
         @request: str = Transcricão pura
     '''
     prompt = f'Analise a seguinte transcrição de reunião e retorne o JSON estruturado conforme instruído:\n\n{request}'
+    context = build_extraction_system_instruction() if context_type == 'complex' else _TRANSCRIPT_CONTEXT
     
     interaction = __client.interactions.create(
         model=__GEMINI_MODEL_NAME,
@@ -93,7 +96,7 @@ def _create_transcript_interactor(request: str) -> TranscriptAnalyse:
             "mime_type": "application/json",
             "schema": TranscriptAnalyse.model_json_schema()
         },
-        system_instruction=_TRANSCRIPT_CONTEXT,
+        system_instruction=context,
         store=False,
     )
 

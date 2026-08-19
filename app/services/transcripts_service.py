@@ -25,7 +25,6 @@ def get_transcript_by_id(id: str) -> str | None :
     df = _pd.read_json(f'{_getcwd()}/assets/anon_transcription.json')
     df_trs = df[df['ID_MEETING'] == int(id)]
 
-    print(df_trs.info())
     if df_trs.empty: 
         return None
 
