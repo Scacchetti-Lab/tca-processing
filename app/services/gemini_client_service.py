@@ -62,17 +62,21 @@ async def send_message(user_message: str, previous_interaction_id: str | None = 
                 message=f"[ERRO]: Ocorreu um erro inesperado\n- {ex}"
             )
 
-async def get_feedback_by_meeting_id(id: str):
-    '''Retorna o Feedback gerado na analíse da transcrição com base em um Id especificado'''
-    pass
-
 async def generate_client_prediction(client_id: str):
     '''Gera uma previsão sobre o cliente partindo do ID especificado e o que esperar de seu futuro com a empresa'''
-    pass
+    return ResponseModel(
+        status=status.HTTP_201_CREATED,
+        content={'result': 'teste'},
+        is_valid=True
+    )
 
-async def generate_meeting_prediction(transcript_id: str):
+async def generate_meeting_prediction(meeting_id: str):
     '''Gera uma previsão sobre a reunião a seguir partindo do ID especificado e o que esperar de seu futuro com a empresa'''
-    pass
+    return ResponseModel(
+        status=status.HTTP_201_CREATED,
+        content={'result': 'teste'},
+        is_valid=True
+    )
 
 def _create_transcript_interactor(request: str) -> TranscriptAnalyse:
     '''Cria um interactor custom e próprio para analíse de transcrições, sendo necessário informar:\n

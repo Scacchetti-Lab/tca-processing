@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routers import chats, transcripts
+from app.routers import chats, transcripts, nlp
 from starlette.middleware.gzip import GZipMiddleware
 # from middleware import app_middleware
 
@@ -17,3 +17,4 @@ def root():
 
 app.include_router(transcripts.router, prefix="/v1/transcript", tags=["Transcript Routes"])
 app.include_router(chats._router, prefix="/v1/chat", tags=["AI Chat Routes"])
+app.include_router(nlp._router, prefix='/v1/nlp', tags=['NLP Routes'])
