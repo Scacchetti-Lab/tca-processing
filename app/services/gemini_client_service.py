@@ -3,9 +3,9 @@ from dotenv import load_dotenv as __load_dotenv
 from google import genai as __genai
 from google.genai.interactions import Interaction, InteractionSSEEvent
 from app.constants.ai_context import TRANSCRIPT_CONTEXT as _TRANSCRIPT_CONTEXT, CHATBOT_CONTEXT as _CHATBOT_CONTEXT, CHATBOT_INITAL as _CHATBOT_INITAL 
-from app.models.chats_models import ChatBotResponse as _ChatBotResponse
-from app.models.transcripts_models import TranscriptAnalyse
-from app.models.response_model import ResponseModel
+from app.types.chats_models import ChatBotResponse as _ChatBotResponse
+from app.types.transcripts_models import TranscriptAnalyse
+from app.types.response_model import ResponseModel
 from fastapi import status
 from typing import Literal
 from app.helper.create_context import build_extraction_system_instruction

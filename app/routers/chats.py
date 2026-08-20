@@ -10,7 +10,7 @@ POST   /chats/client/{id}/predict        # Gera uma previsão com base no id do 
 import traceback
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
-from app.models.response_model import ResponseBaseModel as _ResponseBaseModel, ResponseModel as _ResponseModel
+from app.types.response_model import ResponseBaseModel as _ResponseBaseModel, ResponseModel as _ResponseModel
 import app.services.chats_service as _ch
 import app.services.gemini_client_service as _gen
 from typing import Literal

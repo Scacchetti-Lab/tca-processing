@@ -1,8 +1,8 @@
 import pandas as pd
 from os import getcwd
 from app.services import transcripts_service as trs, gemini_client_service as gen
-from app.models.transcripts_models import TranscriptAnalyse
-from app.models.response_model import ResponseModel
+from app.types.transcripts_models import TranscriptAnalyse
+from app.types.response_model import ResponseModel
 from fastapi import status, HTTPException
 from pydantic import ValidationError
 import json

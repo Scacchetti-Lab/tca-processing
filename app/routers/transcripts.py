@@ -6,8 +6,8 @@ POST   /transcripts/process         # extração via Gemini (faz a limpeza e ext
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
 from app.services import gemini_client_service as gen, transcripts_service as trs
-from app.models.transcripts_models import TranscriptAnalyse, TranscriptDescription, Insights, AnalayseCustomerDefinitions
-from app.models.response_model import ResponseModel, ResponseBaseModel
+from app.types.transcripts_models import TranscriptAnalyse, TranscriptDescription, Insights, AnalayseCustomerDefinitions
+from app.types.response_model import ResponseModel, ResponseBaseModel
 import traceback
 from pydantic import ValidationError
      
