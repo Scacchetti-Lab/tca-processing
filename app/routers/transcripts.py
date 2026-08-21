@@ -6,25 +6,33 @@ POST   /transcripts/process         # extração via Gemini (faz a limpeza e ext
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
 from app.services import gemini_client_service as gen, transcripts_service as trs
-from app.types.transcripts_models import TranscriptAnalyse, TranscriptDescription, Insights, AnalayseCustomerDefinitions
+from app.types.transcripts_models import TranscriptAnalyse, TranscriptReturnJson
 from app.types.response_model import ResponseModel, ResponseBaseModel
+from app.constants.transcript import SCORE_TYPE
 import traceback
+from json import loads as json_loads
 from pydantic import ValidationError
      
-router = APIRouter();
+router = APIRouter()
 
 @router.post("/process", response_model=ResponseBaseModel, status_code=status.HTTP_201_CREATED)
-async def process_transcript(transcript_id: str) -> JSONResponse:
+async def process_transcript(transcript_id: str, score_type: SCORE_TYPE) -> JSONResponse:
     try:
-        transcript = trs.get_transcript_by_id(transcript_id)
+        if (score_type not in ['STRATEGIC', 'PERFORMANCE']):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, message='O tipo do score enviado é inválido.')
 
-        if transcript is None:
+        transcript_json = trs.get_transcript_by_id(transcript_id, score_type)
+
+        if transcript_json is None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail='O ID fornecido é incorreto.'
             )
-        cleaned_text = trs.clean_transcript(transcript)
-        gen_analysed = gen.analyse_transcript(cleaned_text)
+        
+        transcript_data = TranscriptReturnJson.model_validate(transcript_json)
+
+        transcript_data.transcription = trs.clean_transcript(transcript_data.transcription)
+        gen_analysed = gen.analyse_transcript(transcript_data)
         TranscriptAnalyse.model_validate(gen_analysed.content) 
 
         return JSONResponse(

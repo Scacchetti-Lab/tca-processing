@@ -17,7 +17,6 @@ class client(SQLModel, table=True):
     cl_embeddings: list[float] = Field(sa_column=Column(Vector(384), nullable=False))
 
     cl_meetings: list['meeting'] = Relationship(back_populates='client')
-    cl_client_analyse: client_analyse = Relationship(back_populates='client')
 
 class client_analyse(SQLModel, table=True):
     ca_id: UUID = Field(default_factory=uuid4, primary_key=True)

@@ -41,3 +41,11 @@ class TranscriptAnalyse(BaseModel):
     basic_description: TranscriptDescription
     analytic: AnalayseStrategicDefinitions | AnalayseCustomerDefinitions
     feedback: str
+
+class TranscriptReturnJson(BaseModel):
+    transcription: str
+    duration_min: str
+    meeting_date: str
+    revenue: str
+    unit_name: str
+    score_type: SCORE_TYPE

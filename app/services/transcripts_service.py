@@ -2,6 +2,8 @@ import re as _re
 from cleantext import clean as __clean
 import pandas as _pd
 from os import getcwd as _getcwd
+from json import dumps as json_dumps
+from app.types.transcripts_models import TranscriptReturnJson
 
 _RE_MULTI_NEWLINE = _re.compile(r'\n{2,}')
 _RE_SPACES_TABS = _re.compile(r'[ \t]+')
@@ -15,7 +17,7 @@ _LOCUTOR_PLACEHOLDER = "§LOC{}§"
 _ANON_PLACEHOLDER = "§ANON{}§"
 
 
-def get_transcript_by_id(id: str) -> str | None :
+def get_transcript_by_id(id: str, score_type: str) -> str | None :
     ''''Partindo de um Id especificado, retorne a transcrição'''
 
     if (not str.isnumeric(id)):
@@ -28,7 +30,17 @@ def get_transcript_by_id(id: str) -> str | None :
     if df_trs.empty: 
         return None
 
-    return str(df_trs['ANON_TRANSCRICAO'].values[0])
+    # return str(df_trs['ANON_TRANSCRICAO'].values[0])
+
+    data: TranscriptReturnJson = TranscriptReturnJson(
+        transcription=df_trs['ANON_TRANSCRICAO'].values[0] or '',
+        duration_min=df_trs['DURACAO_MEETING'].values[0] or '',
+        meeting_date=df_trs['DT_MEETING'].values[0] or '',
+        revenue=df_trs['FAIXA_FATURAMENTO_CLIENTE_EC'].values[0] or '',
+        unit_name=df_trs['NOME_UNIDADE'].values[0] or '',
+        score_type=score_type
+    )
+    return data.model_dump(mode='json')
 
 def clean_transcript(raw_transcript: str) -> str:
     if not raw_transcript or not raw_transcript.strip():

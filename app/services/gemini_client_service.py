@@ -4,7 +4,7 @@ from google import genai as __genai
 from google.genai.interactions import Interaction, InteractionSSEEvent
 from app.constants.ai_context import TRANSCRIPT_CONTEXT as _TRANSCRIPT_CONTEXT, CHATBOT_CONTEXT as _CHATBOT_CONTEXT, CHATBOT_INITAL as _CHATBOT_INITAL 
 from app.types.chats_models import ChatBotResponse as _ChatBotResponse
-from app.types.transcripts_models import TranscriptAnalyse
+from app.types.transcripts_models import TranscriptAnalyse, TranscriptReturnJson
 from app.types.response_model import ResponseModel
 from fastapi import status
 from typing import Literal
@@ -17,9 +17,12 @@ __GEMINI_MODEL_NAME = __getenv("GEMINI_MODEL_NAME")
 
 __client = __genai.Client(api_key=__GEMINI_API_KEY)
 
-def analyse_transcript(transcript: str) -> ResponseModel:
+def analyse_transcript(transcriptJson: TranscriptReturnJson) -> ResponseModel:
     try:
-        transcript_analysed = _create_transcript_interactor(transcript)
+        if transcriptJson.transcription == '':
+            raise Exception('Não existe transcrição para analisar')
+
+        transcript_analysed = _create_transcript_interactor(transcriptJson)
 
         return ResponseModel(
                 status=status.HTTP_200_OK,
@@ -80,12 +83,12 @@ async def generate_meeting_prediction(meeting_id: str):
         is_valid=True
     )
 
-def _create_transcript_interactor(request: str, context_type: Literal['simple', 'complex'] = 'complex') -> TranscriptAnalyse:
+def _create_transcript_interactor(request_data: TranscriptReturnJson, context_type: Literal['simple', 'complex'] = 'complex', ) -> TranscriptAnalyse:
     '''Cria um interactor custom e próprio para analíse de transcrições, sendo necessário informar:\n
         @request: str = Transcricão pura
     '''
-    prompt = f'Analise a seguinte transcrição de reunião e retorne o JSON estruturado conforme instruído:\n\n{request}'
-    context = build_extraction_system_instruction() if context_type == 'complex' else _TRANSCRIPT_CONTEXT
+    prompt = f'Analise a seguinte transcrição de reunião e retorne o JSON estruturado conforme instruído:\n\n{request_data.transcription}'
+    context = build_extraction_system_instruction(request_data.score_type) if context_type == 'complex' else _TRANSCRIPT_CONTEXT
     
     interaction = __client.interactions.create(
         model=__GEMINI_MODEL_NAME,

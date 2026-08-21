@@ -1,7 +1,7 @@
 from app.constants.keywords import PRODUCTS, POSITIVE_WORDS, NEGATIVE_WORDS
 
 
-def build_extraction_system_instruction() -> str:
+def build_extraction_system_instruction(score_type: str) -> str:
     """
     Monta o system_instruction de extracao dinamicamente, incorporando as listas
     de vocabulario de referencia. Isso evita hardcodar as listas dentro de um JSON
@@ -18,7 +18,9 @@ REGRAS GERAIS:
 1. Baseie toda extração exclusivamente no conteúdo da transcrição. Nunca invente nomes, valores ou fatos que não estejam explícitos ou razoavelmente inferíveis do texto.
 2. Se uma informação não estiver disponível na transcrição, retorne string vazia '' para campos de texto ou 0 para campos numéricos, e mencione a ausência dessa informação no campo 'feedback'.
 3. Todos os valores numéricos de critério (floats) devem estar na escala de 0 a 10, representando o quanto aquele critério foi observado positivamente na reunião. NÃO aplique multiplicadores, pesos de histórico ou divisão entre participantes -- isso é calculado por um sistema externo depois da sua análise. Você só retorna as notas brutas.
-4. O campo 'type' determina qual estrutura preencher em 'analytic' e qual 'score_type' usar: use DIRECTOR + score_type STRATEGIC para reuniões focadas em relacionamento/saúde do cliente (visão gerencial/diretoria), ou SALER + score_type PERFORMANCE para reuniões focadas em desempenho do vendedor e oportunidade de venda. Preencha APENAS o objeto de 'analytic' correspondente ao tipo escolhido.
+4. O campo 'type' determina qual estrutura preencher em 'analytic' e qual 'score_type' usar. Considere score_type={score_type}, e atribute os tópicos com base na explicação abaixo: 
+    - DIRECTOR + score_type STRATEGIC para reuniões focadas em relacionamento/saúde do cliente (visão gerencial/diretoria)
+    - SALER + score_type PERFORMANCE para reuniões focadas em desempenho do vendedor e oportunidade de venda. Preencha APENAS o objeto de 'analytic' correspondente ao tipo escolhido.
 
 VOCABULÁRIO DE REFERÊNCIA -- PRODUTOS TOTVS E CONCORRENTES:
 {produtos_str}
