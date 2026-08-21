@@ -9,6 +9,7 @@ dependencies = [
     "pandas>=3.0.5",
     "pgvector>=0.5.0",
     "pip>=26.2.1",
+    "psycopg2>=2.9.12",
     "rich>=13.7.1",
     "sentence-transformers>=6.0.0",
     "sqlmodel>=0.0.39",

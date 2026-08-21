@@ -1,12 +1,21 @@
 from fastapi import FastAPI
 from app.routers import chats, embed, transcripts
 from starlette.middleware.gzip import GZipMiddleware
+from contextlib import asynccontextmanager
+#from .db_connect import db_create
 # from middleware import app_middleware
+
+# @asynccontextmanager
+# async def lifespan(app: FastAPI):
+#     db_create()
+#     yield
 
 app = FastAPI(
     title="Totvs Commercial AI - Processing",
-    version="1"
+    version="1",
+    #lifespan=lifespan
 )
+
 app.add_middleware(GZipMiddleware, minimum_size=1000)  # comprime respostas acima de 1KB
 # app.add_middleware(app_middleware)
 

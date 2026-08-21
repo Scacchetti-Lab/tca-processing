@@ -1,0 +1,23 @@
+from sqlmodel import Session, create_engine, SQLModel
+from dotenv import load_dotenv
+from os import getenv
+from typing import Annotated
+from fastapi import Depends
+
+load_dotenv()
+
+__connection_string = getenv('PG_CONNECTIONSTRING_MODEL')
+__connect_args = {"check_same_thread": False}
+
+if (not __connection_string):
+    raise ValueError("A string de conexão com o banco de dados é nula.")
+_engine = create_engine(__connection_string, connect_args=__connect_args)
+
+def db_create():
+    SQLModel.metadata.create_all(_engine)
+
+def __db_connect():
+    with Session(_engine) as session:
+        yield session
+
+SessionDep = Annotated[Session, Depends(__db_connect)]
