@@ -13,9 +13,6 @@ if (not __connection_string):
     raise ValueError("A string de conexão com o banco de dados é nula.")
 _engine = create_engine(__connection_string, connect_args=__connect_args)
 
-def db_create():
-    SQLModel.metadata.create_all(_engine)
-
 def __db_connect():
     with Session(_engine) as session:
         yield session
