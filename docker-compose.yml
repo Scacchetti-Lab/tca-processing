@@ -10,6 +10,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
+      - ./app/seed/initial_script.sql
       - postgres_data:/var/lib/postgresql
 
 volumes:

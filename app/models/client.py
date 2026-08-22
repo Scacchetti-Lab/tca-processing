@@ -1,7 +1,7 @@
 from sqlmodel import SQLModel, Relationship, Field
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import Column
-from app.constants.transcript import COMPANY_STATUS
+from app.constants.transcript import COMPANY_STATUS, FINANCIAL_STATUS
 from .meeting import meeting
 from uuid import UUID, uuid4
 from typing import Literal
@@ -20,11 +20,12 @@ class client(SQLModel, table=True):
 
 class client_analyse(SQLModel, table=True):
     ca_id: UUID = Field(default_factory=uuid4, primary_key=True)
-    ca_performance: float | None = Field(default=None, decimal_places=1)
-    ca_closing_probability: float | None = Field(default=None, decimal_places=1)
-    ca_problem_understanding: float | None = Field(default=None, decimal_places=1)
-    ca_financial_impact: float | None = Field(default=None, decimal_places=1)
-    ca_financial_status: Literal['MINIMAL', 'LOW', 'MEDIUM', 'HIGH', 'SEVERAL'] | None = Field(default=None)
+    ca_performance: int | None = Field(default=None, decimal_places=1)
+    ca_closing_probability: int | None = Field(default=None, decimal_places=1)
+    ca_problem_understanding: int | None = Field(default=None, decimal_places=1)
+    ca_risk: int | None = Field(default=None)
+    ca_financial_impact: float | None = Field(default=None, decimal_places=2)
+    ca_financial_status: FINANCIAL_STATUS | None = Field(default=None)
     ca_embeddings: list[float] = Field(sa_column=Column(Vector(384), nullable=False))
     
     ca_client_id: UUID = Field(foreign_key='client.cl_id', unique=True)
