@@ -49,3 +49,7 @@ class TranscriptReturnJson(BaseModel):
     revenue: str
     unit_name: str
     score_type: SCORE_TYPE
+
+class TranscriptPayload(BaseModel):
+    transcript: str
+    score_type: SCORE_TYPE | None = None

@@ -1,7 +1,12 @@
 from app.constants.keywords import PRODUCTS, POSITIVE_WORDS, NEGATIVE_WORDS
 
+def get_score_context(type):
+    if type is None:
+        return 'Atribua o score_type para o tipo que mais satisfazer ao contexto da reunião'
+    return f'Considere o score_type={type}'
 
-def build_extraction_system_instruction(score_type: str) -> str:
+
+def build_extraction_system_instruction(score_type: str | None) -> str:
     """
     Monta o system_instruction de extracao dinamicamente, incorporando as listas
     de vocabulario de referencia. Isso evita hardcodar as listas dentro de um JSON
@@ -11,6 +16,7 @@ def build_extraction_system_instruction(score_type: str) -> str:
     produtos_str = ", ".join(PRODUCTS)
     positivos_str = ", ".join(POSITIVE_WORDS)
     negativos_str = ", ".join(NEGATIVE_WORDS)
+    score_context = get_score_context(score_type)
 
     return f"""Você é um analista de reuniões comerciais especializado em extrair informações estruturadas de transcrições. Sua tarefa é analisar a transcrição fornecida e retornar SOMENTE um JSON válido seguindo exatamente o schema definido, sem nenhum texto adicional antes ou depois.
 
@@ -18,7 +24,7 @@ REGRAS GERAIS:
 1. Baseie toda extração exclusivamente no conteúdo da transcrição. Nunca invente nomes, valores ou fatos que não estejam explícitos ou razoavelmente inferíveis do texto.
 2. Se uma informação não estiver disponível na transcrição, retorne string vazia '' para campos de texto ou 0 para campos numéricos, e mencione a ausência dessa informação no campo 'feedback'.
 3. Todos os valores numéricos de critério (floats) devem estar na escala de 0 a 10, representando o quanto aquele critério foi observado positivamente na reunião. NÃO aplique multiplicadores, pesos de histórico ou divisão entre participantes -- isso é calculado por um sistema externo depois da sua análise. Você só retorna as notas brutas.
-4. O campo 'type' determina qual estrutura preencher em 'analytic' e qual 'score_type' usar. Considere score_type={score_type}, e atribute os tópicos com base na explicação abaixo: 
+4. O campo 'type' determina qual estrutura preencher em 'analytic' e qual 'score_type' usar. {score_context}, e atribui os tópicos com base na explicação abaixo: 
     - DIRECTOR + score_type STRATEGIC para reuniões focadas em relacionamento/saúde do cliente (visão gerencial/diretoria)
     - SALER + score_type PERFORMANCE para reuniões focadas em desempenho do vendedor e oportunidade de venda. Preencha APENAS o objeto de 'analytic' correspondente ao tipo escolhido.
 

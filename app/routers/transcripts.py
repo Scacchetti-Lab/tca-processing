@@ -6,11 +6,10 @@ POST   /transcripts/process         # extração via Gemini (faz a limpeza e ext
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
 from app.services import gemini_client_service as gen, transcripts_service as trs
-from app.types.transcripts_models import TranscriptAnalyse, TranscriptReturnJson
+from app.types.transcripts_models import TranscriptAnalyse, TranscriptReturnJson, TranscriptPayload
 from app.types.response_model import ResponseModel, ResponseBaseModel
 from app.constants.transcript import SCORE_TYPE
 import traceback
-from json import loads as json_loads
 from pydantic import ValidationError
      
 router = APIRouter()
@@ -21,18 +20,27 @@ async def process_transcript(transcript_id: str, score_type: SCORE_TYPE) -> JSON
         if (score_type not in ['STRATEGIC', 'PERFORMANCE']):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='O tipo do score enviado é inválido.')
 
-        transcript_json = trs.get_transcript_by_id(transcript_id, score_type)
+        transcript_data = trs.get_transcript_by_id(transcript_id, score_type)
 
-        if transcript_json is None:
+        if transcript_data is None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail='O ID fornecido é incorreto.'
             )
-        
-        transcript_data = TranscriptReturnJson.model_validate(transcript_json)
 
-        transcript_data.transcription = trs.clean_transcript(transcript_data.transcription)
-        gen_analysed = gen.analyse_transcript(transcript_data)
+        cleaned_text = ''
+        if isinstance(transcript_data, str):
+            cleaned_text = trs.clean_transcript(transcript_data)
+        elif isinstance(transcript_data, TranscriptReturnJson):
+            transcript_data = TranscriptReturnJson.model_validate(transcript_data)
+            cleaned_text = trs.clean_transcript(transcript_data.transcription)
+
+        payload = TranscriptPayload(
+            score_type=score_type,
+            transcript=cleaned_text
+        )
+        
+        gen_analysed = gen.analyse_transcript(payload)
         TranscriptAnalyse.model_validate(gen_analysed.content) 
 
         return JSONResponse(

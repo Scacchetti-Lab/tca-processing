@@ -17,7 +17,7 @@ _LOCUTOR_PLACEHOLDER = "§LOC{}§"
 _ANON_PLACEHOLDER = "§ANON{}§"
 
 
-def get_transcript_by_id(id: str, score_type: str) -> str | None :
+def get_transcript_by_id(id: str, score_type: str) -> str |TranscriptReturnJson | None :
     ''''Partindo de um Id especificado, retorne a transcrição'''
 
     if (not str.isnumeric(id)):
@@ -30,7 +30,7 @@ def get_transcript_by_id(id: str, score_type: str) -> str | None :
     if df_trs.empty: 
         return None
 
-    # return str(df_trs['ANON_TRANSCRICAO'].values[0])
+    return str(df_trs['ANON_TRANSCRICAO'].values[0])
 
     data: TranscriptReturnJson = TranscriptReturnJson(
         transcription=df_trs['ANON_TRANSCRICAO'].values[0] or '',

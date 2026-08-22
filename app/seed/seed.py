@@ -9,7 +9,7 @@ import json
 
 def main():
     print('\033[1;34m[INICIO] Processo de analise de transcrição!!\033[m\n\n')
-    df = pd.read_csv(f'{getcwd().replace('\\', '/')}/assets/anon_transcription.csv')
+    df = pd.read_csv(f'{getcwd().replace('\\', '/')}/seed/anon_transcription.json')
     transcripts = df['ANON_TRANSCRICAO'].head(5).tolist()
     try:
         print('\n\033[1;93m[EM ANDAMENTO] Analisando e Limpando Transcrição\033[m')

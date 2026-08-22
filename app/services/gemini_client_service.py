@@ -1,10 +1,10 @@
 from os import getenv as __getenv
 from dotenv import load_dotenv as __load_dotenv
 from google import genai as __genai
-from google.genai.interactions import Interaction, InteractionSSEEvent
-from app.constants.ai_context import TRANSCRIPT_CONTEXT as _TRANSCRIPT_CONTEXT, CHATBOT_CONTEXT as _CHATBOT_CONTEXT, CHATBOT_INITAL as _CHATBOT_INITAL 
+from google.genai.interactions import Interaction
+from app.constants.ai_context import CHATBOT_CONTEXT as _CHATBOT_CONTEXT, CHATBOT_INITAL as _CHATBOT_INITAL 
 from app.types.chats_models import ChatBotResponse as _ChatBotResponse
-from app.types.transcripts_models import TranscriptAnalyse, TranscriptReturnJson
+from app.types.transcripts_models import TranscriptAnalyse, TranscriptPayload
 from app.types.response_model import ResponseModel
 from fastapi import status
 from typing import Literal
@@ -17,12 +17,13 @@ __GEMINI_MODEL_NAME = __getenv("GEMINI_MODEL_NAME")
 
 __client = __genai.Client(api_key=__GEMINI_API_KEY)
 
-def analyse_transcript(transcriptJson: TranscriptReturnJson) -> ResponseModel:
+def analyse_transcript(payload: TranscriptPayload | str) -> ResponseModel:
     try:
-        if transcriptJson.transcription == '':
-            raise Exception('Não existe transcrição para analisar')
+        if isinstance(payload, str):
+            cleaned_text = payload
+            payload = TranscriptPayload(transcript=cleaned_text)
 
-        transcript_analysed = _create_transcript_interactor(transcriptJson)
+        transcript_analysed = _create_transcript_interactor(payload)
 
         return ResponseModel(
                 status=status.HTTP_200_OK,
@@ -83,12 +84,12 @@ async def generate_meeting_prediction(meeting_id: str):
         is_valid=True
     )
 
-def _create_transcript_interactor(request_data: TranscriptReturnJson, context_type: Literal['simple', 'complex'] = 'complex', ) -> TranscriptAnalyse:
+def _create_transcript_interactor(payload: TranscriptPayload) -> TranscriptAnalyse:
     '''Cria um interactor custom e próprio para analíse de transcrições, sendo necessário informar:\n
         @request: str = Transcricão pura
     '''
-    prompt = f'Analise a seguinte transcrição de reunião e retorne o JSON estruturado conforme instruído:\n\n{request_data.transcription}'
-    context = build_extraction_system_instruction(request_data.score_type) if context_type == 'complex' else _TRANSCRIPT_CONTEXT
+    prompt = f'Analise a seguinte transcrição de reunião e retorne o JSON estruturado conforme instruído:\n\n{payload.transcript}'
+    context = build_extraction_system_instruction(payload.score_type)
     
     interaction = __client.interactions.create(
         model=__GEMINI_MODEL_NAME,
