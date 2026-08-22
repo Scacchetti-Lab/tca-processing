@@ -10,7 +10,19 @@ import json
 def main():
     print('\033[1;34m[INICIO] Processo de analise de transcrição!!\033[m\n\n')
     df = pd.read_csv(f'{getcwd().replace('\\', '/')}/seed/anon_transcription.json')
-    transcripts = df['ANON_TRANSCRICAO'].head(5).tolist()
+
+    n = 0
+    while True:
+        n = input('Digite quantos registros deseja analiar: ')
+        if n.isnumeric():
+            n = int(n)
+            if n > 0 and n <= df.count().count():
+                break
+            print('Número inválido')
+        else:
+            print('Somente numeros são válidos')
+
+    transcripts = df['ANON_TRANSCRICAO'].head(n).tolist()
     try:
         print('\n\033[1;93m[EM ANDAMENTO] Analisando e Limpando Transcrição\033[m')
         cleaned_transcripts = trs.clean_transcripts_batch(transcripts)
