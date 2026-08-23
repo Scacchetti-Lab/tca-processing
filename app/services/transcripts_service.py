@@ -1,9 +1,10 @@
 import re as _re
 from cleantext import clean as __clean
 import pandas as _pd
-from os import getcwd as _getcwd
-from json import dumps as json_dumps
-from app.types.transcripts_models import TranscriptReturnJson
+from os import getcwd as _getcwd, environ as _environ
+from typing import TYPE_CHECKING
+from app.helpers.is_valid_uuid import is_valid_uuid
+from uuid import UUID
 
 _RE_MULTI_NEWLINE = _re.compile(r'\n{2,}')
 _RE_SPACES_TABS = _re.compile(r'[ \t]+')
@@ -17,20 +18,48 @@ _LOCUTOR_PLACEHOLDER = "§LOC{}§"
 _ANON_PLACEHOLDER = "§ANON{}§"
 
 
-def get_transcript_by_id(id: str) -> str | None :
-    ''''Partindo de um Id especificado, retorne a transcrição'''
+USE_DB = bool(_environ['USE_DATABASE'])
 
+if TYPE_CHECKING:
+    from app.db_connect import SessionDep
+    from app.repository.transcript import TranscriptRepository
+    from app.models.transcript import transcript
+
+def get_by_dataframe(id: str):
     if (not str.isnumeric(id)):
         return None
-
-    # Código abaixo só para testes até o SQL não ser implementado
-    df = _pd.read_json(f'{_getcwd()}/assets/anon_transcription.json')
+    
+    df = _pd.read_json(f'{_getcwd()}/app/seed/anon_transcription.json')
     df_trs = df[df['ID_MEETING'] == int(id)]
 
     if df_trs.empty: 
         return None
 
     return str(df_trs['ANON_TRANSCRICAO'].values[0])
+
+
+def get_transcript_by_id(id: str, session: SessionDep | None = None) -> str | None:
+    ''''Partindo de um Id especificado, retorne a transcrição'''
+
+    if not USE_DB:
+        return get_by_dataframe(id)
+
+    if session is None:
+        raise ValueError('Variável session é null')
+
+    transcript_repository = TranscriptRepository(session)
+
+    if not is_valid_uuid(id):
+        raise ValueError('ID fornecido é inválido')
+
+    res = transcript_repository.get_by_id(UUID(id))
+    if not res.is_valid:
+        return None
+
+    transcript_model = res.result
+    if isinstance(transcript_model, transcript):
+        return transcript_model.tr_raw_transcript
+    return None
 
 def clean_transcript(raw_transcript: str) -> str:
     if not raw_transcript or not raw_transcript.strip():

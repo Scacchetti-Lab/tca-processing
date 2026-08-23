@@ -1,3 +1,5 @@
+
+from uuid import UUID
 from .interface.transcript import TranscriptInterface
 from app.types.response_model import RespositoryModel
 from typing import TYPE_CHECKING
@@ -11,7 +13,7 @@ class TranscriptRepository(TranscriptInterface):
     def __init__(self, session: SessionDep) -> None:
         self.session = session
 
-    def get_by_id(self, transcript_id: str) -> RespositoryModel:
+    def get_by_id(self, transcript_id: UUID) -> RespositoryModel:
         try:
             transcription = self.session.get_one(transcript, transcript_id)
 

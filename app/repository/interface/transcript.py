@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
+from uuid import UUID
 
 if TYPE_CHECKING:
     from app.models.transcript import transcript_chunk
@@ -9,7 +10,7 @@ if TYPE_CHECKING:
 
 class TranscriptInterface(ABC):
     @abstractmethod
-    def get_by_id(self, transcript_id: str) -> RespositoryModel:
+    def get_by_id(self, transcript_id: UUID) -> RespositoryModel:
         pass
 
     @abstractmethod

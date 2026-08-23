@@ -20,7 +20,7 @@ async def process_transcript(transcript_id: str, score_type: SCORE_TYPE) -> JSON
         if (score_type not in ['STRATEGIC', 'PERFORMANCE']):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='O tipo do score enviado é inválido.')
 
-        transcript_data = trs.get_transcript_by_id(transcript_id, score_type)
+        transcript_data = trs.get_transcript_by_id(transcript_id)
 
         if transcript_data is None:
             raise HTTPException(

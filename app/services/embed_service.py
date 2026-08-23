@@ -14,7 +14,6 @@ _model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
 
 def add_transcript_embeddings(transcript_id: str, chunks: list[str], embeddings, session: SessionDep) -> ResponseModel:
     try:
-        session.begin()
         transcript_uuid = UUID(transcript_id)
         transcript_repository = TranscriptRepository(session)
     
@@ -43,7 +42,6 @@ def add_transcript_embeddings(transcript_id: str, chunks: list[str], embeddings,
         )
     except Exception as ex:
         raise ex
-
 
 def generate_chunks(transcript_sliced: str):
 
@@ -79,7 +77,6 @@ def _format_client_to_embbeding(raw_client: client):
         f"Histórico de reuniões: {resumos}"
     )
     
-
 def generate_embeds(raw_model):
     if isinstance(raw_model, List):
         return _model.encode(raw_model).tolist()
@@ -91,4 +88,5 @@ def generate_embeds(raw_model):
         return None
 
     return _model.encode(formatted).tolist()
+
     
