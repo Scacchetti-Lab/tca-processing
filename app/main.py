@@ -2,12 +2,18 @@ from fastapi import FastAPI
 from app.routers import chats, embed, transcripts
 from starlette.middleware.gzip import GZipMiddleware
 from contextlib import asynccontextmanager
+from app.exceptions.exceptions import validation_exception_handler, custom_http_exception_handler
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 # from middleware import app_middleware
 
 app = FastAPI(
     title="Totvs Commercial AI - Processing",
     version="1",
 )
+
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(StarletteHTTPException, custom_http_exception_handler)
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)  # comprime respostas acima de 1KB
 # app.add_middleware(app_middleware)
@@ -19,4 +25,4 @@ def root():
 
 app.include_router(transcripts.router, prefix="/v1/transcript", tags=["Transcript Routes"])
 app.include_router(chats._router, prefix="/v1/chat", tags=["AI Chat Routes"])
-app.include_router(embed._router, prefix="/v1/embed", tags=["Embeddings"])
+app.include_router(embed._router, prefix="/v1/embed", tags=["Embedding Routes"])

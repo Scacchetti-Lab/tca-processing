@@ -1,19 +1,23 @@
 from sqlmodel import SQLModel, Field, Relationship
-from sqlalchemy import Column
+from sqlalchemy import Column, String
 from uuid import UUID, uuid4
 from pgvector.sqlalchemy import Vector
 from app.constants.transcript import TRANSCRIPT_DB_STATUS
-from .meeting import meeting
 from datetime import datetime
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.meeting import meeting
+
 
 class transcript(SQLModel, table=True):
     tr_id: UUID = Field(default_factory=uuid4,primary_key=True, index=True)
     tr_raw_transcript: str
     tr_resume: str
-    tr_status: TRANSCRIPT_DB_STATUS = Field(default='NOT_STARTED')
+    tr_status: TRANSCRIPT_DB_STATUS = Field(sa_column=Column(String(255), nullable=False), default='NOT_STARTED')
 
     tr_transcript_chunks: list["transcript_chunk"] = Relationship(back_populates='transcript')
-    tr_meeting: meeting = Relationship(back_populates='transcript')
+    tr_meeting: 'meeting' = Relationship(back_populates='transcript')
 
 class transcript_chunk(SQLModel, table=True):
     tc_id: UUID = Field(default_factory=uuid4, primary_key=True)

@@ -1,7 +1,7 @@
 CREATE EXTENSION vector;
 
 CREATE TABLE "user" (
-  "us_uid" UUID NOT NULL DEFAULT (gen_random_uuid()),
+  "us_id" UUID NOT NULL DEFAULT (gen_random_uuid()),
   "us_fullname" VARCHAR(255) NOT NULL,
   "us_username" VARCHAR(255) UNIQUE NOT NULL,
   "us_cpf" CHAR(11) UNIQUE NOT NULL,
@@ -19,7 +19,7 @@ CREATE TABLE "user" (
   "us_modified_on" TIMESTAMPTZ NOT NULL DEFAULT (now()),
   "us_created_by" UUID,
   "us_created_on" TIMESTAMPTZ NOT NULL DEFAULT (now()),
-  PRIMARY KEY ("us_uid")
+  PRIMARY KEY ("us_id")
 );
 
 CREATE TABLE "address" (
@@ -43,10 +43,9 @@ CREATE TABLE "profile" (
 );
 
 CREATE TABLE "user_profile" (
-  "up_id" UUID NOT NULL DEFAULT (gen_random_uuid()),
   "up_user_id" UUID NOT NULL,
   "up_profile_id" UUID NOT NULL,
-  PRIMARY KEY ("up_id")
+  PRIMARY KEY ("up_user_id", "up_profile_id")
 );
 
 CREATE TABLE "salesperson" (
@@ -135,7 +134,6 @@ CREATE TABLE "client_analyse" (
   "ca_risk" SMALLINT NOT NULL,
   "ca_finacial_impact" DECIMAL(8,2) NOT NULL,
   "ca_finacial_status" VARCHAR(255) NOT NULL CHECK ("ca_finacial_status" IN ('MINIMAL', 'LOW', 'MEDIUM', 'HIGH', 'SEVERAL')),
-  "ca_embeddings" VECTOR(384),
   PRIMARY KEY ("ca_id")
 );
 
@@ -322,7 +320,7 @@ ALTER TABLE "manager" ADD FOREIGN KEY ("mg_user_id") REFERENCES "user" ("us_uid"
 
 ALTER TABLE "manager" ADD FOREIGN KEY ("mg_created_by") REFERENCES "user" ("us_uid") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
 
-ALTER TABLE "user" ADD FOREIGN KEY ("us_created_by") REFERENCES "user" ("us_uid") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "user" ADD FOREIGN KEY ("us_created_by") REFERENCES "user" ("us_id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
 
 ALTER TABLE "message" ADD FOREIGN KEY ("ms_session_id") REFERENCES "session" ("ss_id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
 
@@ -339,3 +337,29 @@ ALTER TABLE "meeting_strategic_analyse" ADD FOREIGN KEY ("sa_meeting_id") REFERE
 ALTER TABLE "meeting_strategic_analyse" ADD FOREIGN KEY ("sa_client_id") REFERENCES "client" ("cl_id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
 
 ALTER TABLE "audit" ADD FOREIGN KEY ("au_user_id") REFERENCES "user" ("us_uid") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
+
+CREATE ROLE ai_role;
+
+GRANT USAGE ON SCHEMA public TO ai_role;
+
+GRANT SELECT ON
+  "user",
+  client,
+  client_analyse,
+  meeting,
+  manager,
+  meeting_employee,
+  meeting_performance_analyse,
+  meeting_strategic_analyse,
+  salesperson,
+  transcript,
+  session,
+  message
+TO ai_role;
+
+GRANT SELECT, INSERT, DELETE ON transcript_chunks TO ai_role;
+
+GRANT UPDATE (mt_embeddings) ON meeting TO ai_role;
+GRANT UPDATE (cl_embeddings) ON client TO ai_role;
+
+CREATE ROLE totvsai LOGIN PASSWORD 'totvsai' IN ROLE ai_role;
