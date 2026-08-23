@@ -1,7 +1,7 @@
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from sentence_transformers import SentenceTransformer
 from app.models import meeting, client
-from app.models.transcript import transcript_chunk
+from app.models.transcript import transcript_chunks
 from typing import List
 from uuid import UUID, uuid4
 from datetime import datetime
@@ -10,20 +10,18 @@ from app.repository.transcript import TranscriptRepository
 from app.types.response_model import ResponseModel
 from fastapi import status
 
-_model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
-
 def add_transcript_embeddings(transcript_id: str, chunks: list[str], embeddings, session: SessionDep) -> ResponseModel:
     try:
         transcript_uuid = UUID(transcript_id)
         transcript_repository = TranscriptRepository(session)
     
-        chunk_models: list['transcript_chunk'] = []
+        chunk_models: list['transcript_chunks'] = []
         for chunk, embedding in zip(chunks, embeddings):
-            chunk_models.append(transcript_chunk(
+            chunk_models.append(transcript_chunks(
                 tc_id=uuid4(),
                 tc_chunk_text=chunk,
                 tc_created_at=datetime.now(),
-                tc_embeddings=embedding,
+                tc_embedding=embedding,
                 tc_transcript_id=transcript_uuid
             ))
         res = transcript_repository.save_chunks(chunk_models)
@@ -32,13 +30,12 @@ def add_transcript_embeddings(transcript_id: str, chunks: list[str], embeddings,
             raise RuntimeError(res.message)
 
         session.commit()
-        session.refresh(chunk_models)    
 
         return ResponseModel(
             status=status.HTTP_201_CREATED,
             message=res.message,
             is_valid=True,
-            content=res.result
+            content={"result": res.message}
         )
     except Exception as ex:
         raise ex
@@ -77,9 +74,9 @@ def _format_client_to_embbeding(raw_client: client):
         f"Histórico de reuniões: {resumos}"
     )
     
-def generate_embeds(raw_model):
+def generate_embeds(raw_model, model: SentenceTransformer):
     if isinstance(raw_model, List):
-        return _model.encode(raw_model).tolist()
+        return model.encode(raw_model).tolist()
     elif isinstance(raw_model, meeting):
         formatted = _format_meeting_to_embbeding(raw_model)
     elif isinstance(raw_model, client):
@@ -87,6 +84,6 @@ def generate_embeds(raw_model):
     else:
         return None
 
-    return _model.encode(formatted).tolist()
+    return model.encode(formatted).tolist()
 
     

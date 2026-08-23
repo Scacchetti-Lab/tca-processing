@@ -5,7 +5,6 @@ from app.types.transcripts_models import TranscriptAnalyse
 from app.types.response_model import ResponseModel
 from fastapi import status, HTTPException
 from pydantic import ValidationError
-import json
 
 def main():
     print('\033[1;34m[INICIO] Processo de analise de transcrição!!\033[m\n\n')
@@ -49,9 +48,7 @@ def main():
 
 
         print('\n\n\033[1;93m[EM ANDAMENTO] Escrevendo arquivo...\033[m')
-        with open('analise_ia.json', 'w') as file:
-            result = json.dumps(responses)
-            file.write(result)
+        
         print('\033[1;32m[CONCLUÍDO] Arquivo escrito com sucesso!\033[m')
 
         print('\n\n\033[1;34m[ENCERRADO] Processo finalizado!!\033[m')

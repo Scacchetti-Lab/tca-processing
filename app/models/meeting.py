@@ -15,25 +15,29 @@ class meeting(SQLModel, table=True):
     mt_id: UUID = Field(default_factory=uuid4, primary_key=True)
     mt_totvs_id: int | None = Field(unique=True, index=True)
     mt_title: str = Field(unique=True)
-    mt_duration_meeting: datetime = Field(default_factory=datetime.now)
+    mt_duration_min: int
     mt_summary: str | None = Field(default=None, nullable=True)
     mt_scheduled: datetime
-    mt_status: Literal['SCHEDULED', 'CANCELLED', 'COMPLETED', 'RESCHEDULED'] = Field(sa_column=Column(String(255), nullable=False), default='SCHEDULED')
+    mt_status: Literal['SCHEDULED', 'IN_PROGRESS' 'CANCELLED', 'COMPLETED'] = Field(sa_column=Column(String(255), nullable=False), default='SCHEDULED')
     mt_performance_avg: float | None = Field(default=None, nullable=True) # Porcentagem do desempenho da reunião
     mt_type: TRANSCRIPT_TYPE = Field(sa_column=Column(String(255), nullable=False))
     mt_feedback: str
-    mt_priority: INSIGHT_PRIORITY | None = Field(sa_column=Column(String(255), nullable=False), default=None)
+    mt_priority: INSIGHT_PRIORITY | None = Field(sa_column=Column(String(255), nullable=True), default=None)
     mt_is_deleted: bool = Field(default=False)
     mt_embeddings: list[float] | None = Field(default=None, sa_column=Column(Vector(384), nullable=True))
 
     mt_transcript_id: UUID = Field(foreign_key='transcript.tr_id', unique=True, index=True)
     mt_transcript: 'transcript' = Relationship(back_populates='tr_meeting')
 
-    mt_client_id: UUID = Field(foreign_key='client.cl_id')
+    mt_client_id: UUID = Field(foreign_key='client.cl_id', nullable=False)
     mt_client: 'client' = Relationship(back_populates='cl_meetings')
 
     mt_strategic_analyse: 'meeting_strategic_analyse' = Relationship(back_populates='sa_meeting')
     mt_performance_analyse: 'meeting_performance_analyse' = Relationship(back_populates='pa_meeting')
+
+    mt_strategic_analyse: 'meeting_strategic_analyse' = Relationship(back_populates='sa_meeting')
+    mt_performance_analyse: 'meeting_performance_analyse' = Relationship(back_populates='pa_meeting')
+    mt_employees: list['meeting_employee'] = Relationship(back_populates='me_meeting')
 
 class meeting_employee(SQLModel, table=True):
     __table_args__ = (UniqueConstraint('me_meeting_id', 'me_user_profile_id'),)

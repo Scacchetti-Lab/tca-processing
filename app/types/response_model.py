@@ -12,7 +12,7 @@ class RespositoryBaseModel(BaseModel):
     message: str
     result: Any
 
-class ResponseModel(ResponseBaseModel):
+class ResponseModel:
     def __init__(self, status: int, content: dict[str, str] | None = None, message: str = '', is_valid: bool = False) -> None:
         self.status = status
         self.content = content

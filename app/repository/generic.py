@@ -15,7 +15,7 @@ class GenericRepository(GenericInterface):
 
     def get_model_by_id(self, model: type[SQLModel], model_id: UUID) -> RespositoryModel:
         try:
-            data_value = self.session.get_one(model, model_id)
+            data_value = self.session.get(model, model_id)
 
             if not data_value:
                 return RespositoryModel(message='Nenhum cliente encontrada com esse ID')

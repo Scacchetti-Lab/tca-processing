@@ -11,16 +11,17 @@ from app.types.response_model import ResponseModel, ResponseBaseModel
 from app.constants.transcript import SCORE_TYPE
 import traceback
 from pydantic import ValidationError
+from app.db_connect import SessionDep
      
 router = APIRouter()
 
 @router.post("/process", response_model=ResponseBaseModel, status_code=status.HTTP_201_CREATED)
-async def process_transcript(transcript_id: str, score_type: SCORE_TYPE) -> JSONResponse:
+async def process_transcript(transcript_id: str, score_type: SCORE_TYPE, session: SessionDep) -> JSONResponse:
     try:
         if (score_type not in ['STRATEGIC', 'PERFORMANCE']):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='O tipo do score enviado é inválido.')
 
-        transcript_data = trs.get_transcript_by_id(transcript_id)
+        transcript_data = trs.get_transcript_by_id(transcript_id, session)
 
         if transcript_data is None:
             raise HTTPException(

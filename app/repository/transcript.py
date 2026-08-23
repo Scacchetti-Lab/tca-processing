@@ -3,10 +3,12 @@ from uuid import UUID
 from .interface.transcript import TranscriptInterface
 from app.types.response_model import RespositoryModel
 from typing import TYPE_CHECKING
+from sqlmodel import select
+from app.models.transcript import transcript_chunks, transcript
+from app.db_connect import SessionDep
 
 if TYPE_CHECKING:
-    from app.models.transcript import transcript_chunk, transcript
-    from app.db_connect import SessionDep
+    pass
 
 class TranscriptRepository(TranscriptInterface):
 
@@ -15,7 +17,7 @@ class TranscriptRepository(TranscriptInterface):
 
     def get_by_id(self, transcript_id: UUID) -> RespositoryModel:
         try:
-            transcription = self.session.get_one(transcript, transcript_id)
+            transcription = self.session.get(transcript, transcript_id)
 
             if not transcription:
                 return RespositoryModel(message='Nenhuma transcrição encontrada com esse ID')
@@ -29,17 +31,17 @@ class TranscriptRepository(TranscriptInterface):
             print(ex)
             raise ex
 
-    def save_chunks(self, chunk_models: list['transcript_chunk']) -> RespositoryModel:
+    def save_chunks(self, chunk_models: list['transcript_chunks']) -> RespositoryModel:
         try:
             self.session.add_all(chunk_models)
 
             return RespositoryModel(
                 is_valid=True,
-                message=f'{len(chunk_models)} valores foram adiconados a {transcript_chunk.__str__}',
-                result=chunk_models
+                message=f'{len(chunk_models)} chunks foram adiconados a transcript_chunks',
+                result=None
             )
         except Exception as ex:
             print(ex)
             return RespositoryModel(
-                message=f'Ocorreu um erro durante o INSERT\nNenhum valor foi adicionado a {transcript_chunk.__str__}'
+                message=f'Ocorreu um erro durante o INSERT\nNenhum valor foi adicionado a {transcript_chunks.__str__}'
             )

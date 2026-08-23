@@ -1,10 +1,15 @@
 import re as _re
 from cleantext import clean as __clean
 import pandas as _pd
-from os import getcwd as _getcwd, environ as _environ
+from os import getcwd as _getcwd, getenv
+from dotenv import load_dotenv
 from typing import TYPE_CHECKING
 from app.helpers.is_valid_uuid import is_valid_uuid
 from uuid import UUID
+from app.repository.transcript import TranscriptRepository
+from app.models.transcript import transcript
+
+load_dotenv()
 
 _RE_MULTI_NEWLINE = _re.compile(r'\n{2,}')
 _RE_SPACES_TABS = _re.compile(r'[ \t]+')
@@ -18,12 +23,10 @@ _LOCUTOR_PLACEHOLDER = "§LOC{}§"
 _ANON_PLACEHOLDER = "§ANON{}§"
 
 
-USE_DB = bool(_environ['USE_DATABASE'])
+USE_DB = bool(getenv('USE_DATABASE'))
 
 if TYPE_CHECKING:
     from app.db_connect import SessionDep
-    from app.repository.transcript import TranscriptRepository
-    from app.models.transcript import transcript
 
 def get_by_dataframe(id: str):
     if (not str.isnumeric(id)):
@@ -40,7 +43,7 @@ def get_by_dataframe(id: str):
 
 def get_transcript_by_id(id: str, session: SessionDep | None = None) -> str | None:
     ''''Partindo de um Id especificado, retorne a transcrição'''
-
+    
     if not USE_DB:
         return get_by_dataframe(id)
 

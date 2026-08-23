@@ -1,7 +1,4 @@
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from uuid import UUID
+from uuid import UUID
 
 def is_valid_uuid(uuid_string):
     try:

@@ -16,14 +16,14 @@ class transcript(SQLModel, table=True):
     tr_resume: str
     tr_status: TRANSCRIPT_DB_STATUS = Field(sa_column=Column(String(255), nullable=False), default='NOT_STARTED')
 
-    tr_transcript_chunks: list["transcript_chunk"] = Relationship(back_populates='transcript')
-    tr_meeting: 'meeting' = Relationship(back_populates='transcript')
+    tr_transcript_chunks: list["transcript_chunks"] = Relationship(back_populates='tc_transcript')
+    tr_meeting: 'meeting' = Relationship(back_populates='mt_transcript')
 
-class transcript_chunk(SQLModel, table=True):
+class transcript_chunks(SQLModel, table=True):
     tc_id: UUID = Field(default_factory=uuid4, primary_key=True)
     tc_chunk_text: str
     tc_created_at: datetime
-    tc_embeddings: list[float] = Field(sa_column=Column(Vector(384), nullable=False))
+    tc_embedding: list[float] = Field(sa_column=Column(Vector(384), nullable=False))
 
     tc_transcript_id: UUID = Field(foreign_key='transcript.tr_id')
     tc_transcript: transcript = Relationship(back_populates='tr_transcript_chunks')

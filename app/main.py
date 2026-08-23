@@ -1,15 +1,26 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
+from sentence_transformers import SentenceTransformer
 from app.routers import chats, embed, transcripts
 from starlette.middleware.gzip import GZipMiddleware
 from contextlib import asynccontextmanager
 from app.exceptions.exceptions import validation_exception_handler, custom_http_exception_handler
+from app import deps
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 # from middleware import app_middleware
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    deps.model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
+    yield
+    deps.model = None
+
+
 app = FastAPI(
     title="Totvs Commercial AI - Processing",
     version="1",
+    lifespan=lifespan
 )
 
 app.add_exception_handler(RequestValidationError, validation_exception_handler)

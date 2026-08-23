@@ -7,11 +7,10 @@ from fastapi import Depends
 load_dotenv()
 
 __connection_string = getenv('PG_CONNECTIONSTRING_MODEL')
-__connect_args = {"check_same_thread": False}
 
 if (not __connection_string):
     raise ValueError("A string de conexão com o banco de dados é nula.")
-_engine = create_engine(__connection_string, connect_args=__connect_args)
+_engine = create_engine(__connection_string, pool_pre_ping=True)
 
 def __db_connect():
     with Session(_engine) as session:
