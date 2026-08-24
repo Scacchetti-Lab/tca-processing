@@ -43,5 +43,26 @@ class TranscriptRepository(TranscriptInterface):
         except Exception as ex:
             print(ex)
             return RespositoryModel(
-                message=f'Ocorreu um erro durante o INSERT\nNenhum valor foi adicionado a {transcript_chunks.__str__}'
+                message=f'Ocorreu um erro durante o INSERT\nNenhum valor foi adicionado a transcript_chunks'
+            )
+    def search_simmiliarities(self, embedding_prompt: list[float]) -> RespositoryModel:
+        try:
+            query = select(transcript_chunks).order_by(
+                transcript_chunks.tc_embedding.cosine_distance(embedding_prompt)  # type: ignore[reportAttributeAccessIssue]
+            ).limit(5)
+
+            chunks = self.session.exec(query).all()
+
+            if not chunks:
+                return RespositoryModel(message='Nenhum trecho encontrado para essa transcrição')
+
+            return RespositoryModel(
+                is_valid=True,
+                message='Trechos encontrados!',
+                result=chunks
+            )
+        except Exception as ex:
+            print(ex)
+            return RespositoryModel(
+                message=f'Nenhuma similaridade foi encontrada nas transcrições'
             )

@@ -75,14 +75,12 @@ def _format_client_to_embbeding(raw_client: client):
     )
     
 def generate_embeds(raw_model, model: SentenceTransformer):
-    if isinstance(raw_model, List):
-        return model.encode(raw_model).tolist()
-    elif isinstance(raw_model, meeting):
+    if isinstance(raw_model, meeting):
         formatted = _format_meeting_to_embbeding(raw_model)
     elif isinstance(raw_model, client):
         formatted = _format_client_to_embbeding(raw_model)
     else:
-        return None
+        return model.encode(raw_model).tolist()
 
     return model.encode(formatted).tolist()
 

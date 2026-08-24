@@ -16,3 +16,7 @@ class TranscriptInterface(ABC):
     @abstractmethod
     def save_chunks(self, chunk_models: list['transcript_chunks']) -> RespositoryModel:
         pass
+
+    @abstractmethod
+    def search_simmiliarities(self, embedding_prompt: list[float]) -> RespositoryModel:
+        pass
