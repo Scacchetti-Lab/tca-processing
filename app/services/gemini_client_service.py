@@ -1,12 +1,16 @@
+from time import sleep
 from os import getenv as __getenv
+from traceback import format_exc
 from dotenv import load_dotenv as __load_dotenv
 from google import genai as __genai
 from google.genai.interactions import Interaction
+from google.genai.errors import ClientError
 from app.constants.ai_context import CHATBOT_CONTEXT as _CHATBOT_CONTEXT, CHATBOT_INITAL as _CHATBOT_INITAL 
 from app.types.chats_models import ChatBotResponse as _ChatBotResponse
 from app.types.transcripts_models import TranscriptAnalyse, TranscriptPayload
 from app.types.response_model import ResponseModel
 from fastapi import status
+
 from app.helpers.create_context import build_extraction_system_instruction
 
 __load_dotenv() 
@@ -16,25 +20,42 @@ __GEMINI_MODEL_NAME = __getenv("GEMINI_MODEL_NAME")
 
 __client = __genai.Client(api_key=__GEMINI_API_KEY)
 
-def analyse_transcript(payload: TranscriptPayload | str) -> ResponseModel:
-    try:
-        if isinstance(payload, str):
-            cleaned_text = payload
-            payload = TranscriptPayload(transcript=cleaned_text)
+def analyse_transcript(payload: TranscriptPayload | str, tries: int = 3) -> ResponseModel:
+    if isinstance(payload, str):
+        payload = TranscriptPayload(transcript=payload)
 
-        transcript_analysed = _create_transcript_interactor(payload)
-
-        return ResponseModel(
+    for i in range(tries):
+        try:
+            transcript_analysed = _create_transcript_interactor(payload)
+            return ResponseModel(
                 status=status.HTTP_200_OK,
                 content=transcript_analysed.model_dump(mode='json'),
                 is_valid=True
             )
-    except Exception as ex:
-        print(ex)
-        return ResponseModel(
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+
+        except ClientError as ex:
+            if ex.code == 429 and i < tries - 1:
+                sleep(15 * (2 ** i))   # 15s, 30s
+                continue
+
+            if ex.code == 429:
+                return ResponseModel(
+                    status=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    message="Limite de requisições da IA atingido. Tente novamente em alguns instantes."
+                )
+            raise
+
+        except Exception as ex:
+            print(format_exc())
+            return ResponseModel(
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 message=f"[ERRO]: Ocorreu um erro inesperado\n- {ex}"
             )
+
+    return ResponseModel(
+        status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        message="Não foi possível gerar a análise após múltiplas tentativas."
+    )
 
 async def send_message(user_message: str, previous_interaction_id: str | None = None) -> ResponseModel:
     try:

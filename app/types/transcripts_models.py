@@ -16,21 +16,21 @@ class TranscriptDescription(BaseModel):
     insights: Insights
 
 class AnalayseStrategicDefinitions(BaseModel):
-    employees_performance: float
-    company_status: COMPANY_STATUS
     company_performance: float          
     closing_probability: float          
-    problem_understanding: float        
+    flexibility: float
     risk: float                         
     finacial_impact: float
+    finacial_impact_value: float
     finacial_impact_status: FINANCIAL_STATUS
+    company_status: COMPANY_STATUS    
 
 class AnalayseCustomerDefinitions(BaseModel):
     engagement: float                   
-    opportunities_seized: float         
     communication_quality: float        
+    opportunities_seized: float         
     objection_handling: float           
-    converted_potencials: float         
+    errors_missed_opportunities: float         
     leads_converted: int
     tips: str
 
@@ -44,7 +44,6 @@ class TranscriptAnalyse(BaseModel):
 
 class TranscriptReturnJson(BaseModel):
     transcription: str
-    duration_min: str
     meeting_date: str
     revenue: str
     unit_name: str
