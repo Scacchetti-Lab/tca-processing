@@ -98,9 +98,9 @@ def __embed_meeting_or_client(model_name: Literal['client', 'meeting'], model_id
 
         match(model_name):
             case 'client':
-                model.cl_embeddings = embeddings_generated
+                model.embeddings = embeddings_generated
             case 'meeting':
-                model.mt_embeddings = embeddings_generated
+                model.embeddings = embeddings_generated
             case _:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,

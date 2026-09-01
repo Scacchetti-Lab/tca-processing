@@ -1,365 +1,448 @@
-CREATE EXTENSION vector;
+-- =========================================================
+-- TOTVS Commercial AI — schema completo
+-- =========================================================
 
-CREATE TABLE "user" (
-  "us_id" UUID NOT NULL DEFAULT (gen_random_uuid()),
-  "us_fullname" VARCHAR(255) NOT NULL,
-  "us_username" VARCHAR(255) UNIQUE NOT NULL,
-  "us_cpf" CHAR(11) UNIQUE NOT NULL,
-  "us_mobilephone" VARCHAR(255),
-  "us_birthdate" DATE NOT NULL,
-  "us_email" VARCHAR(255) NOT NULL,
-  "us_password" VARCHAR(255) NOT NULL,
-  "us_profilephoto" VARCHAR(255),
-  "us_address_id" UUID NOT NULL,
-  "us_score" INTEGER DEFAULT 0,
-  "us_score_type" VARCHAR(255) CHECK ("us_score_type" IN ('PERFORMANCE', 'STRATEGIC')),
-  "us_ai_token_used" INTEGER DEFAULT 0,
-  "us_status" VARCHAR(255) NOT NULL CHECK ("us_status" IN ('FORCE_CHANGE_PASSWORD', 'VERIFIED', 'WAITING_VERIFY', 'BANNED', 'ACTIVE', 'INACTIVE')),
-  "us_is_deleted" BOOLEAN NOT NULL DEFAULT false,
-  "us_modified_on" TIMESTAMPTZ NOT NULL DEFAULT (now()),
-  "us_created_by" UUID,
-  "us_created_on" TIMESTAMPTZ NOT NULL DEFAULT (now()),
-  PRIMARY KEY ("us_id")
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- =========================================================
+-- USERS
+-- =========================================================
+CREATE TABLE "users" (
+  "id" UUID NOT NULL DEFAULT (gen_random_uuid()),
+  "fullname" VARCHAR(255) NOT NULL,
+  "username" VARCHAR(255) UNIQUE NOT NULL,
+  "cpf" CHAR(11) UNIQUE NOT NULL,
+  "mobilephone" VARCHAR(255),
+  "birthdate" DATE NOT NULL,
+  "email" VARCHAR(255) NOT NULL,
+  "password" VARCHAR(255) NOT NULL,
+  "profilephoto" VARCHAR(255),
+  "address_id" UUID NOT NULL,
+  "score" INTEGER DEFAULT 0,
+  "score_type" VARCHAR(255) CHECK ("score_type" IN ('PERFORMANCE', 'STRATEGIC')),
+  "ai_token_used" INTEGER DEFAULT 0,
+  "status" VARCHAR(255) NOT NULL CHECK ("status" IN ('FORCE_CHANGE_PASSWORD', 'VERIFIED', 'WAITING_VERIFY', 'BANNED', 'ACTIVE', 'INACTIVE')),
+  "is_deleted" BOOLEAN NOT NULL DEFAULT false,
+  "modified_on" TIMESTAMPTZ NOT NULL DEFAULT (now()),
+  "created_by" UUID,
+  "created_on" TIMESTAMPTZ NOT NULL DEFAULT (now()),
+  PRIMARY KEY ("id")
 );
 
-CREATE TABLE "address" (
-  "ad_id" UUID NOT NULL DEFAULT (gen_random_uuid()),
-  "ad_postalcode" CHAR(8) NOT NULL,
-  "ad_number" VARCHAR(20) NOT NULL,
-  "ad_name" VARCHAR(255) NOT NULL,
-  "ad_complement" VARCHAR(255),
-  "ad_state" VARCHAR(255) NOT NULL,
-  "ad_uf" CHAR(2) NOT NULL,
-  "ad_neighborhood" VARCHAR(255) NOT NULL,
-  PRIMARY KEY ("ad_id")
+-- =========================================================
+-- ADDRESSES
+-- =========================================================
+CREATE TABLE "addresses" (
+  "id" UUID NOT NULL DEFAULT (gen_random_uuid()),
+  "postalcode" CHAR(8) NOT NULL,
+  "number" VARCHAR(20) NOT NULL,
+  "name" VARCHAR(255) NOT NULL,
+  "complement" VARCHAR(255),
+  "state" VARCHAR(255) NOT NULL,
+  "uf" CHAR(2) NOT NULL,
+  "neighborhood" VARCHAR(255) NOT NULL,
+  PRIMARY KEY ("id")
 );
 
-CREATE TABLE "profile" (
-  "pf_id" UUID NOT NULL DEFAULT (gen_random_uuid()),
-  "pf_name" VARCHAR(255) NOT NULL,
-  "pf_avg_salary" DECIMAL(8,2),
-  "pf_is_admin" BOOLEAN NOT NULL DEFAULT false,
-  PRIMARY KEY ("pf_id")
+-- =========================================================
+-- PROFILES
+-- CORRIGIDO: colunas ainda estavam com prefixo pf_ enquanto a PK
+-- referenciava "id".
+-- =========================================================
+CREATE TABLE "profiles" (
+  "id" UUID NOT NULL DEFAULT (gen_random_uuid()),
+  "name" VARCHAR(255) NOT NULL,
+  "avg_salary" DECIMAL(8,2),
+  "is_admin" BOOLEAN NOT NULL DEFAULT false,
+  PRIMARY KEY ("id")
 );
 
-CREATE TABLE "user_profile" (
-  "up_user_id" UUID NOT NULL,
-  "up_profile_id" UUID NOT NULL,
-  PRIMARY KEY ("up_user_id", "up_profile_id")
+-- =========================================================
+-- USER_PROFILES
+-- PK composta funciona agora que meeting_employees passou a referenciar
+-- users diretamente, não mais esta tabela.
+-- =========================================================
+CREATE TABLE "user_profiles" (
+  "user_id" UUID NOT NULL,
+  "profile_id" UUID NOT NULL,
+  PRIMARY KEY ("user_id", "profile_id")
 );
 
-CREATE TABLE "salesperson" (
-  "sp_id" UUID NOT NULL DEFAULT (gen_random_uuid()),
-  "sp_user_id" UUID UNIQUE NOT NULL,
-  "sp_total_leads" INTEGER,
-  "sp_performance_pp" SMALLINT,
-  "sp_engagement_pp" SMALLINT,
-  "sp_communication_quality_pp" SMALLINT,
-  "sp_opportunities_seized_pp" SMALLINT,
-  "sp_objection_handling_pp" SMALLINT,
-  "sp_total_meetings" INTEGER NOT NULL DEFAULT 0,
-  "sp_need_training" BOOLEAN NOT NULL DEFAULT false,
-  "sp_squad_id" UUID NOT NULL,
-  PRIMARY KEY ("sp_id")
+-- =========================================================
+-- SALESPERSONS
+-- Campos derivados (_pp, total_leads) removidos: são calculáveis a partir
+-- de meeting_performance_scores e ficariam desatualizados como cache.
+-- =========================================================
+CREATE TABLE "salespersons" (
+  "id" UUID NOT NULL DEFAULT (gen_random_uuid()),
+  "user_id" UUID UNIQUE NOT NULL,
+  "total_meetings" INTEGER NOT NULL DEFAULT 0,
+  "need_training" BOOLEAN NOT NULL DEFAULT false,
+  "squad_id" UUID NOT NULL,
+  PRIMARY KEY ("id")
 );
 
-CREATE TABLE "squad" (
-  "sq_id" UUID NOT NULL DEFAULT (gen_random_uuid()),
-  "sq_name" VARCHAR(255) NOT NULL,
-  "fk_sq_manager_id" UUID NOT NULL,
-  "sq_description" VARCHAR(255) NOT NULL,
-  "sq_performance_avg" SMALLINT NOT NULL DEFAULT 0,
-  PRIMARY KEY ("sq_id")
+-- =========================================================
+-- SQUADS
+-- =========================================================
+CREATE TABLE "squads" (
+  "id" UUID NOT NULL DEFAULT (gen_random_uuid()),
+  "name" VARCHAR(255) NOT NULL,
+  "manager_id" UUID NOT NULL,
+  "description" VARCHAR(255) NOT NULL,
+  "performance_avg" SMALLINT NOT NULL DEFAULT 0,
+  PRIMARY KEY ("id")
 );
 
-CREATE TABLE "manager" (
-  "mg_id" UUID NOT NULL DEFAULT (gen_random_uuid()),
-  "mg_user_id" UUID UNIQUE NOT NULL,
-  "mg_total_meetings" INTEGER NOT NULL DEFAULT 0,
-  "mg_performance_pp" SMALLINT,
-  "mg_total_squads" SMALLINT NOT NULL DEFAULT 0,
-  "mg_unit" VARCHAR(255),
-  "mg_score_goal" SMALLINT,
-  "mg_created_by" UUID NOT NULL,
-  "mg_created_on" TIMESTAMPTZ NOT NULL DEFAULT (now()),
-  "mg_modified_on" TIMESTAMPTZ NOT NULL DEFAULT (now()),
-  PRIMARY KEY ("mg_id")
+-- =========================================================
+-- MANAGERS
+-- =========================================================
+CREATE TABLE "managers" (
+  "id" UUID NOT NULL DEFAULT (gen_random_uuid()),
+  "user_id" UUID UNIQUE NOT NULL,
+  "total_meetings" INTEGER NOT NULL DEFAULT 0,
+  "total_squads" SMALLINT NOT NULL DEFAULT 0,
+  "unit" VARCHAR(255),
+  "score_goal" SMALLINT,
+  "created_by" UUID NOT NULL,
+  "created_on" TIMESTAMPTZ NOT NULL DEFAULT (now()),
+  "modified_on" TIMESTAMPTZ NOT NULL DEFAULT (now()),
+  PRIMARY KEY ("id")
 );
 
-CREATE TABLE "meeting" (
-  "mt_id" UUID NOT NULL DEFAULT (gen_random_uuid()),
-  "mt_totvs_id" INTEGER UNIQUE NOT NULL,
-  "mt_transcript_id" UUID UNIQUE NOT NULL,
-  "mt_title" VARCHAR(255) NOT NULL,
-  "mt_summary" TEXT NOT NULL,
-  "mt_scheduled" TIMESTAMPTZ NOT NULL,
-  "mt_duration_min" INTEGER,
-  "mt_type" VARCHAR(50) NOT NULL CHECK ("mt_type" IN ('SALESPERSON', 'DIRECTOR')),
-  "mt_status" VARCHAR(50) NOT NULL CHECK ("mt_status" IN ('SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED')),
-  "mt_performance_avg" SMALLINT,
-  "mt_feedback" TEXT NOT NULL,
-  "mt_priority" VARCHAR(50) CHECK ("mt_priority" IN ('HIGH', 'MEDIUM', 'LOW')),
-  "mt_client_id" UUID NOT NULL,
-  "mt_is_deleted" BOOLEAN NOT NULL DEFAULT false,
-  "mt_embeddings" VECTOR(384),
-  PRIMARY KEY ("mt_id")
+-- =========================================================
+-- MEETINGS
+-- =========================================================
+CREATE TABLE "meetings" (
+  "id" UUID NOT NULL DEFAULT (gen_random_uuid()),
+  "totvs_id" INTEGER UNIQUE NOT NULL,
+  "transcript_id" UUID UNIQUE NOT NULL,
+  "title" VARCHAR(255) NOT NULL,
+  "summary" TEXT NOT NULL,
+  "scheduled" TIMESTAMPTZ NOT NULL,
+  "duration_min" INTEGER,
+  "type" VARCHAR(50) NOT NULL CHECK ("type" IN ('SALESPERSON', 'DIRECTOR')),
+  "status" VARCHAR(50) NOT NULL CHECK ("status" IN ('SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED')),
+  "performance_avg" SMALLINT,
+  "feedback" TEXT NOT NULL,
+  "priority" VARCHAR(50) CHECK ("priority" IN ('HIGH', 'MEDIUM', 'LOW')),
+  "client_id" UUID NOT NULL,
+  "is_deleted" BOOLEAN NOT NULL DEFAULT false,
+  "embeddings" VECTOR(384),
+  PRIMARY KEY ("id")
 );
 
-CREATE TABLE "meeting_employee" (
-  "me_id" UUID NOT NULL DEFAULT (gen_random_uuid()),
-  "me_meeting_id" UUID NOT NULL,
-  "me_user_profile_id" UUID NOT NULL,
-  "me_feedback_tip" TEXT NOT NULL,
-  PRIMARY KEY ("me_id")
+-- =========================================================
+-- MEETING_EMPLOYEES
+-- Agora referencia users diretamente (antes era user_profiles).
+-- feedback_tip nullable: só é preenchido quando a transcrição permitir
+-- identificar quem fez cada fala (diarização por locutor).
+-- =========================================================
+CREATE TABLE "meeting_employees" (
+  "id" UUID NOT NULL DEFAULT (gen_random_uuid()),
+  "meeting_id" UUID NOT NULL,
+  "user_id" UUID NOT NULL,
+  "feedback_tip" TEXT,
+  PRIMARY KEY ("id")
 );
 
-CREATE TABLE "client" (
-  "cl_id" UUID NOT NULL DEFAULT (gen_random_uuid()),
-  "cl_name" VARCHAR(255) NOT NULL,
-  "cl_fantasy_name" VARCHAR(255) NOT NULL,
-  "cl_cnpj" CHAR(14) UNIQUE NOT NULL,
-  "cl_address_id" UUID NOT NULL,
-  "cl_revenue" DECIMAL(15,2) NOT NULL DEFAULT 0,
-  "cl_status" VARCHAR(255) NOT NULL CHECK ("cl_status" IN ('CRITIC', 'BAD', 'OK', 'GOOD')),
-  "cl_embeddings" VECTOR(384),
-  PRIMARY KEY ("cl_id")
+-- =========================================================
+-- CLIENTS
+-- squad_id: vínculo com a carteira, necessário para calcular o percentual
+-- de impacto financeiro sobre a receita total da carteira.
+-- =========================================================
+CREATE TABLE "clients" (
+  "id" UUID NOT NULL DEFAULT (gen_random_uuid()),
+  "name" VARCHAR(255) NOT NULL,
+  "fantasy_name" VARCHAR(255) NOT NULL,
+  "cnpj" CHAR(14) UNIQUE NOT NULL,
+  "address_id" UUID NOT NULL,
+  "squad_id" UUID,
+  "revenue" DECIMAL(15,2) NOT NULL DEFAULT 0,
+  "status" VARCHAR(255) NOT NULL CHECK ("status" IN ('CRITIC', 'BAD', 'OK', 'GOOD')),
+  "embeddings" VECTOR(384),
+  PRIMARY KEY ("id")
 );
 
-CREATE TABLE "client_analyse" (
-  "ca_id" UUID NOT NULL DEFAULT (gen_random_uuid()),
-  "ca_client_id" UUID UNIQUE NOT NULL,
-  "ca_performance" SMALLINT NOT NULL,
-  "ca_closing_probability" SMALLINT NOT NULL,
-  "ca_problem_understanding" SMALLINT NOT NULL,
-  "ca_risk" SMALLINT NOT NULL,
-  "ca_finacial_impact" DECIMAL(8,2) NOT NULL,
-  "ca_finacial_status" VARCHAR(255) NOT NULL CHECK ("ca_finacial_status" IN ('MINIMAL', 'LOW', 'MEDIUM', 'HIGH', 'SEVERAL')),
-  PRIMARY KEY ("ca_id")
+-- =========================================================
+-- CLIENT_ANALYSES
+-- Cache 1:1 do estado atual do cliente. O histórico vive em
+-- meeting_strategic_analyses / meeting_strategic_scores.
+-- =========================================================
+CREATE TABLE "client_analyses" (
+  "id" UUID NOT NULL DEFAULT (gen_random_uuid()),
+  "client_id" UUID UNIQUE NOT NULL,
+  "performance" SMALLINT NOT NULL,
+  "closing_probability" SMALLINT NOT NULL,
+  "flexibility" SMALLINT NOT NULL,
+  "risk" SMALLINT NOT NULL,
+  "financial_impact" DECIMAL(8,2) NOT NULL,
+  "financial_status" VARCHAR(255) NOT NULL CHECK ("financial_status" IN ('MINIMAL', 'LOW', 'MEDIUM', 'HIGH', 'SEVERAL')),
+  PRIMARY KEY ("id")
 );
 
-CREATE TABLE "transcript" (
-  "tr_id" UUID NOT NULL DEFAULT (gen_random_uuid()),
-  "tr_raw_transcript" TEXT NOT NULL,
-  "tr_resume" TEXT NOT NULL,
-  "tr_status" VARCHAR(255) NOT NULL CHECK ("tr_status" IN ('NOT_STARTED', 'IN_PROGRESS', 'DONE', 'ERROR', 'CANCELLED')),
-  PRIMARY KEY ("tr_id")
+-- =========================================================
+-- TRANSCRIPTS
+-- =========================================================
+CREATE TABLE "transcripts" (
+  "id" UUID NOT NULL DEFAULT (gen_random_uuid()),
+  "raw_transcript" TEXT NOT NULL,
+  "resume" TEXT NOT NULL,
+  "status" VARCHAR(255) NOT NULL CHECK ("status" IN ('NOT_STARTED', 'IN_PROGRESS', 'DONE', 'ERROR', 'CANCELLED')),
+  PRIMARY KEY ("id")
 );
 
-CREATE TABLE "session" (
-  "ss_id" UUID NOT NULL DEFAULT (gen_random_uuid()),
-  "ss_title" VARCHAR(255) NOT NULL,
-  "ss_last_activity" TIMESTAMPTZ NOT NULL DEFAULT (now()),
-  "ss_created_on" TIMESTAMPTZ NOT NULL DEFAULT (now()),
-  "ss_user_id" UUID NOT NULL,
-  "ss_model_used" VARCHAR(255) NOT NULL CHECK ("ss_model_used" IN ('FAST', 'PRO')),
-  "ss_last_interaction_id" VARCHAR(255),
-  PRIMARY KEY ("ss_id")
+-- =========================================================
+-- SESSIONS
+-- =========================================================
+CREATE TABLE "sessions" (
+  "id" UUID NOT NULL DEFAULT (gen_random_uuid()),
+  "title" VARCHAR(255) NOT NULL,
+  "last_activity" TIMESTAMPTZ NOT NULL DEFAULT (now()),
+  "created_on" TIMESTAMPTZ NOT NULL DEFAULT (now()),
+  "user_id" UUID NOT NULL,
+  "model_used" VARCHAR(255) NOT NULL CHECK ("model_used" IN ('FAST', 'PRO')),
+  "last_interaction_id" VARCHAR(255),
+  PRIMARY KEY ("id")
 );
 
-CREATE TABLE "message" (
-  "ms_id" UUID NOT NULL DEFAULT (gen_random_uuid()),
-  "ms_session_id" UUID NOT NULL,
-  "ms_role" VARCHAR(255) NOT NULL CHECK ("ms_role" IN ('SALESPERSON', 'MANAGER', 'TOTVS_AI')),
-  "ms_content" TEXT NOT NULL,
-  "ms_created_on" TIMESTAMPTZ NOT NULL DEFAULT (now()),
-  PRIMARY KEY ("ms_id")
+-- =========================================================
+-- MESSAGES
+-- =========================================================
+CREATE TABLE "messages" (
+  "id" UUID NOT NULL DEFAULT (gen_random_uuid()),
+  "session_id" UUID NOT NULL,
+  "role" VARCHAR(255) NOT NULL CHECK ("role" IN ('SALESPERSON', 'MANAGER', 'TOTVS_AI')),
+  "content" TEXT NOT NULL,
+  "created_on" TIMESTAMPTZ NOT NULL DEFAULT (now()),
+  PRIMARY KEY ("id")
 );
 
-CREATE TABLE "configuration" (
-  "cf_id" UUID NOT NULL DEFAULT (gen_random_uuid()),
-  "cf_key" VARCHAR(255) UNIQUE NOT NULL,
-  "cf_type" VARCHAR(255) NOT NULL CHECK ("cf_type" IN ('STRING', 'INTEGER', 'DOUBLE', 'BOOLEAN')),
-  "cf_content" TEXT NOT NULL,
-  PRIMARY KEY ("cf_id")
+-- =========================================================
+-- CONFIGURATIONS
+-- =========================================================
+CREATE TABLE "configurations" (
+  "id" UUID NOT NULL DEFAULT (gen_random_uuid()),
+  "key" VARCHAR(255) UNIQUE NOT NULL,
+  "type" VARCHAR(255) NOT NULL CHECK ("type" IN ('STRING', 'INTEGER', 'DOUBLE', 'BOOLEAN')),
+  "content" TEXT NOT NULL,
+  PRIMARY KEY ("id")
 );
 
+-- =========================================================
+-- TRANSCRIPT_CHUNKS
+-- =========================================================
 CREATE TABLE "transcript_chunks" (
-  "tc_id" UUID NOT NULL DEFAULT (gen_random_uuid()),
-  "tc_transcript_id" UUID NOT NULL,
-  "tc_chunk_text" TEXT NOT NULL,
-  "tc_embedding" VECTOR(384) NOT NULL,
-  "tc_created_at" TIMESTAMPTZ NOT NULL DEFAULT (now()),
-  PRIMARY KEY ("tc_id")
+  "id" UUID NOT NULL DEFAULT (gen_random_uuid()),
+  "transcript_id" UUID NOT NULL,
+  "chunk_text" TEXT NOT NULL,
+  "embedding" VECTOR(384) NOT NULL,
+  "created_at" TIMESTAMPTZ NOT NULL DEFAULT (now()),
+  PRIMARY KEY ("id")
 );
 
-CREATE TABLE "audit" (
-  "au_id" UUID NOT NULL DEFAULT (gen_random_uuid()),
-  "au_entity_name" VARCHAR(255) NOT NULL,
-  "au_user_id" UUID,
-  "au_created_at" TIMESTAMPTZ NOT NULL DEFAULT (now()),
-  "au_previous" JSONB NOT NULL,
-  "au_new" JSONB NOT NULL,
-  PRIMARY KEY ("au_id")
+-- =========================================================
+-- AUDITS
+-- =========================================================
+CREATE TABLE "audits" (
+  "id" UUID NOT NULL DEFAULT (gen_random_uuid()),
+  "entity_name" VARCHAR(255) NOT NULL,
+  "user_id" UUID,
+  "created_at" TIMESTAMPTZ NOT NULL DEFAULT (now()),
+  "previous" JSONB NOT NULL,
+  "new" JSONB NOT NULL,
+  PRIMARY KEY ("id")
 );
 
-CREATE TABLE "meeting_strategic_analyse" (
-  "sa_id" UUID NOT NULL DEFAULT (gen_random_uuid()),
-  "sa_meeting_id" UUID UNIQUE NOT NULL,
-  "sa_client_id" UUID NOT NULL,
-  "sa_employees_performance" NUMERIC(4,2) NOT NULL,
-  "sa_company_status" VARCHAR(50) NOT NULL,
-  "sa_company_performance" NUMERIC(4,2) NOT NULL,
-  "sa_closing_probability" NUMERIC(4,2) NOT NULL,
-  "sa_problem_understanding" NUMERIC(4,2) NOT NULL,
-  "sa_risk" NUMERIC(4,2) NOT NULL,
-  "sa_financial_impact" NUMERIC(4,2) NOT NULL,
-  "sa_financial_impact_status" VARCHAR(50) NOT NULL,
-  "sa_created_at" TIMESTAMPTZ NOT NULL DEFAULT (now()),
-  PRIMARY KEY ("sa_id")
+-- =========================================================
+-- MEETING_STRATEGIC_ANALYSES — notas brutas da IA (type=DIRECTOR)
+-- =========================================================
+CREATE TABLE "meeting_strategic_analyses" (
+  "id" UUID NOT NULL DEFAULT (gen_random_uuid()),
+  "meeting_id" UUID UNIQUE NOT NULL,
+  "client_id" UUID NOT NULL,
+  "company_status" VARCHAR(50) NOT NULL CHECK ("company_status" IN ('GOOD', 'OK', 'BAD', 'CRITIC')),
+  "company_performance" NUMERIC(4,2) NOT NULL,
+  "closing_probability" NUMERIC(4,2) NOT NULL,
+  "flexibility" NUMERIC(4,2) NOT NULL,
+  "risk" NUMERIC(4,2) NOT NULL,
+  "financial_impact" NUMERIC(4,2) NOT NULL,
+  "financial_impact_value" DECIMAL(15,2),
+  "financial_impact_status" VARCHAR(50) NOT NULL CHECK ("financial_impact_status" IN ('MINIMAL', 'LOW', 'MEDIUM', 'HIGH', 'SEVERAL')),
+  "created_at" TIMESTAMPTZ NOT NULL DEFAULT (now()),
+  PRIMARY KEY ("id")
 );
 
-CREATE TABLE "meeting_performance_analyse" (
-  "pa_id" UUID NOT NULL DEFAULT (gen_random_uuid()),
-  "pa_meeting_id" UUID UNIQUE NOT NULL,
-  "pa_engagement" NUMERIC(4,2) NOT NULL,
-  "pa_opportunities_seized" NUMERIC(4,2) NOT NULL,
-  "pa_communication_quality" NUMERIC(4,2) NOT NULL,
-  "pa_objection_handling" NUMERIC(4,2) NOT NULL,
-  "pa_converted_potencials" NUMERIC(4,2) NOT NULL,
-  "pa_leads_converted" INTEGER NOT NULL,
-  "pa_tips" TEXT NOT NULL,
-  "pa_created_at" TIMESTAMPTZ NOT NULL DEFAULT (now()),
-  PRIMARY KEY ("pa_id")
+-- =========================================================
+-- MEETING_PERFORMANCE_ANALYSES — notas brutas da IA (type=SALESPERSON)
+-- Nota coletiva: uma linha por reunião, conforme a documentação
+-- ("vale igualmente para todos os presentes").
+-- =========================================================
+CREATE TABLE "meeting_performance_analyses" (
+  "id" UUID NOT NULL DEFAULT (gen_random_uuid()),
+  "meeting_id" UUID UNIQUE NOT NULL,
+  "engagement" NUMERIC(4,2) NOT NULL,
+  "communication_quality" NUMERIC(4,2) NOT NULL,
+  "opportunities_seized" NUMERIC(4,2) NOT NULL,
+  "objection_handling" NUMERIC(4,2) NOT NULL,
+  "errors_missed_opportunities" NUMERIC(4,2) NOT NULL DEFAULT 0,
+  "leads_converted" INTEGER NOT NULL,
+  "tips" TEXT NOT NULL,
+  "created_at" TIMESTAMPTZ NOT NULL DEFAULT (now()),
+  PRIMARY KEY ("id")
 );
 
-CREATE UNIQUE INDEX "user_unique_0" ON "user" ("us_cpf", "us_username");
+-- =========================================================
+-- MEETING_STRATEGIC_SCORES — resultado calculado pelo Java (1:1 com reunião)
+-- =========================================================
+CREATE TABLE "meeting_strategic_scores" (
+  "id" UUID NOT NULL DEFAULT (gen_random_uuid()),
+  "meeting_id" UUID UNIQUE NOT NULL,
+  "client_id" UUID NOT NULL,
+  "base_score" NUMERIC(6,2) NOT NULL,
+  "multiplier" NUMERIC(3,2) NOT NULL,
+  "carteira_percentage" NUMERIC(6,3),
+  "financial_impact_level" VARCHAR(20) CHECK ("financial_impact_level" IN ('ALTO', 'MEDIO', 'BAIXO')),
+  "financial_factor" NUMERIC(3,2) NOT NULL DEFAULT 1.00,
+  "final_score" NUMERIC(8,2) NOT NULL,
+  "calculated_at" TIMESTAMPTZ NOT NULL DEFAULT (now()),
+  PRIMARY KEY ("id")
+);
 
-CREATE INDEX "user_us_cpf_index" ON "user" ("us_cpf");
+-- =========================================================
+-- MEETING_PERFORMANCE_SCORES — resultado calculado pelo Java
+-- UMA LINHA POR VENDEDOR POR REUNIÃO: a nota base é coletiva, mas o
+-- multiplicador é individual (últimas 5 reuniões daquele vendedor),
+-- então o score final difere entre participantes da mesma reunião.
+-- =========================================================
+CREATE TABLE "meeting_performance_scores" (
+  "id" UUID NOT NULL DEFAULT (gen_random_uuid()),
+  "meeting_id" UUID NOT NULL,
+  "salesperson_id" UUID NOT NULL,
+  "base_score" NUMERIC(6,2) NOT NULL,
+  "multiplier" NUMERIC(3,2) NOT NULL,
+  "streak_type" VARCHAR(20) CHECK ("streak_type" IN ('ALTA', 'QUEDA', 'ESTAVEL')),
+  "streak_count" SMALLINT NOT NULL DEFAULT 0,
+  "final_score" NUMERIC(8,2) NOT NULL,
+  "calculated_at" TIMESTAMPTZ NOT NULL DEFAULT (now()),
+  PRIMARY KEY ("id"),
+  CONSTRAINT "meeting_performance_scores_unique" UNIQUE ("meeting_id", "salesperson_id")
+);
 
-CREATE UNIQUE INDEX "address_unique_0" ON "address" ("ad_postalcode", "ad_number", "ad_complement");
+-- =========================================================
+-- ÍNDICES
+-- =========================================================
+CREATE UNIQUE INDEX "users_unique_0" ON "users" ("cpf", "username");
+CREATE INDEX "users_cpf_index" ON "users" ("cpf");
 
-CREATE UNIQUE INDEX "user_profile_unique_0" ON "user_profile" ("up_user_id", "up_profile_id");
+CREATE UNIQUE INDEX "addresses_unique_0" ON "addresses" ("postalcode", "number", "complement");
 
-CREATE INDEX "squad_fk_sq_manager_id_index" ON "squad" ("fk_sq_manager_id");
+CREATE INDEX "squads_manager_id_index" ON "squads" ("manager_id");
 
-CREATE UNIQUE INDEX "meeting_employee_unique_participant" ON "meeting_employee" ("me_meeting_id", "me_user_profile_id");
+-- CORRIGIDO: índice referenciava a coluna user_profile_id, que não existe mais.
+CREATE UNIQUE INDEX "meeting_employees_unique_participant" ON "meeting_employees" ("meeting_id", "user_id");
+CREATE INDEX "meeting_employees_meeting_id_index" ON "meeting_employees" ("meeting_id");
 
-CREATE INDEX "meeting_employee_me_meeting_id_index" ON "meeting_employee" ("me_meeting_id");
+CREATE INDEX "clients_squad_id_index" ON "clients" ("squad_id");
 
-CREATE INDEX "message_ms_session_id_index" ON "message" ("ms_session_id");
+CREATE INDEX "messages_session_id_index" ON "messages" ("session_id");
+CREATE INDEX "messages_created_on_index" ON "messages" ("created_on");
 
-CREATE INDEX "message_ms_created_on_index" ON "message" ("ms_created_on");
+CREATE INDEX "transcript_chunks_embedding_index" ON "transcript_chunks" USING HNSW ("embedding" vector_cosine_ops);
 
-CREATE INDEX ON "transcript_chunks" USING HNSW ("tc_embedding" vector_cosine_ops);
+CREATE INDEX "meeting_strategic_scores_client_index" ON "meeting_strategic_scores" ("client_id", "calculated_at");
+CREATE INDEX "meeting_performance_scores_salesperson_index" ON "meeting_performance_scores" ("salesperson_id", "calculated_at");
 
-COMMENT ON COLUMN "user"."us_modified_on" IS 'ATUALIZA QUANDO QUALQUER OPERACAO CRUD OCORRER (EXCETO READ)';
+-- =========================================================
+-- COMENTÁRIOS
+-- =========================================================
+COMMENT ON COLUMN "users"."modified_on" IS 'ATUALIZA QUANDO QUALQUER OPERACAO CRUD OCORRER (EXCETO READ)';
+COMMENT ON COLUMN "users"."created_on" IS 'DATA DE HOJE EM CASO DE NULO';
 
-COMMENT ON COLUMN "user"."us_created_on" IS 'DATA DE HOJE EM CASO DE NULO';
+COMMENT ON COLUMN "salespersons"."total_meetings" IS 'total de reuniões participadas no último mês';
 
-COMMENT ON COLUMN "salesperson"."sp_performance_pp" IS 'Porcentagem do desempenho do vendedor';
+COMMENT ON COLUMN "managers"."total_meetings" IS 'total de reuniões do gerente e da sua equipe';
+COMMENT ON COLUMN "managers"."total_squads" IS 'total de squads geridas por esse gerente';
+COMMENT ON COLUMN "managers"."unit" IS 'unidade/filial do gerente';
+COMMENT ON COLUMN "managers"."score_goal" IS 'meta de score definida para a equipe';
+COMMENT ON COLUMN "managers"."created_by" IS 'usuário (admin) que criou este registro de gerente';
 
-COMMENT ON COLUMN "salesperson"."sp_engagement_pp" IS 'Porcentagem do engajamento do vendedor';
+COMMENT ON COLUMN "meetings"."scheduled" IS 'Data e hora em que a reunião foi agendada';
+COMMENT ON COLUMN "meetings"."duration_min" IS 'Duração da reunião em minutos';
+COMMENT ON COLUMN "meetings"."type" IS 'Define qual tabela de analytic aplica: SALESPERSON -> meeting_performance_analyses, DIRECTOR -> meeting_strategic_analyses';
 
-COMMENT ON COLUMN "salesperson"."sp_communication_quality_pp" IS 'Porcentagem da qualidade de comunicação do vendedor';
+COMMENT ON COLUMN "meeting_employees"."feedback_tip" IS 'Dica individualizada por participante -- nulo quando a transcrição não identifica quem fez cada fala (sem diarização por locutor)';
 
-COMMENT ON COLUMN "salesperson"."sp_opportunities_seized_pp" IS 'Porcentagem de aproveitamento de oportunidades do vendedor';
+COMMENT ON COLUMN "clients"."revenue" IS 'faturamento mensal';
+COMMENT ON COLUMN "clients"."squad_id" IS 'Carteira do cliente -- base do cálculo de percentual de impacto financeiro';
 
-COMMENT ON COLUMN "salesperson"."sp_objection_handling_pp" IS 'Porcentagem de tratamento de objeções do vendedor';
+COMMENT ON COLUMN "transcript_chunks"."transcript_id" IS 'Identificador da transcrição';
+COMMENT ON COLUMN "transcript_chunks"."embedding" IS 'Vetor de embedding gerado pelo modelo local (384 dimensões)';
 
-COMMENT ON COLUMN "salesperson"."sp_total_meetings" IS 'total de reuniões participadas no último mês';
+COMMENT ON COLUMN "audits"."entity_name" IS 'Nome da entidade do banco de dados';
+COMMENT ON COLUMN "audits"."user_id" IS 'Usuário que realizou a alteração';
+COMMENT ON COLUMN "audits"."created_at" IS 'Data de criação';
+COMMENT ON COLUMN "audits"."previous" IS 'Último valor antes da modificação';
+COMMENT ON COLUMN "audits"."new" IS 'Novo valor após a modificação';
 
-COMMENT ON COLUMN "manager"."mg_total_meetings" IS 'total de reuniões do gerente e da sua equipe';
+COMMENT ON COLUMN "meeting_strategic_analyses"."client_id" IS 'Desnormalizado de meetings.client_id para evitar join -- mantido em sincronia pela aplicação';
+COMMENT ON COLUMN "meeting_strategic_analyses"."financial_impact" IS 'Nota qualitativa 0-10 do impacto financeiro (gerada pela IA)';
+COMMENT ON COLUMN "meeting_strategic_analyses"."financial_impact_value" IS 'Valor monetário em risco ou oportunidade identificado na reunião';
 
-COMMENT ON COLUMN "manager"."mg_performance_pp" IS 'porcentagem de desempenho agregado da equipe';
+COMMENT ON COLUMN "meeting_performance_analyses"."errors_missed_opportunities" IS 'Erros e oportunidades perdidas (0-8) -- SUBTRAI do score base';
 
-COMMENT ON COLUMN "manager"."mg_total_squads" IS 'total de squads geridas por esse gerente';
+COMMENT ON COLUMN "meeting_strategic_scores"."carteira_percentage" IS 'Percentual do valor em risco/oportunidade sobre a receita total da carteira';
+COMMENT ON COLUMN "meeting_strategic_scores"."financial_factor" IS 'Fator do ajuste financeiro aplicado (ex: 1.20, 0.90, 1.00)';
 
-COMMENT ON COLUMN "manager"."mg_unit" IS 'unidade/filial do gerente';
+COMMENT ON COLUMN "meeting_performance_scores"."base_score" IS 'Nota base coletiva da reunião -- idêntica para todos os vendedores presentes';
+COMMENT ON COLUMN "meeting_performance_scores"."multiplier" IS 'Multiplicador individual de tendência do vendedor (últimas 5 reuniões)';
+COMMENT ON COLUMN "meeting_performance_scores"."streak_type" IS 'Direção da sequência atual (ALTA/QUEDA/ESTAVEL) -- guardado para auditoria';
+COMMENT ON COLUMN "meeting_performance_scores"."streak_count" IS 'Quantidade de reuniões consecutivas na sequência atual';
 
-COMMENT ON COLUMN "manager"."mg_score_goal" IS 'meta de score definida para a equipe';
+-- =========================================================
+-- FOREIGN KEYS
+-- =========================================================
+ALTER TABLE "meeting_employees" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "meeting_employees" ADD FOREIGN KEY ("meeting_id") REFERENCES "meetings" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
 
-COMMENT ON COLUMN "manager"."mg_created_by" IS 'usuário (admin) que criou este registro de gerente';
+ALTER TABLE "sessions" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
 
-COMMENT ON COLUMN "meeting"."mt_scheduled" IS 'Data e hora em que a reunião foi agendada';
+ALTER TABLE "salespersons" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "salespersons" ADD FOREIGN KEY ("squad_id") REFERENCES "squads" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
 
-COMMENT ON COLUMN "meeting"."mt_duration_min" IS 'Duração da reunião em minutos';
+ALTER TABLE "clients" ADD FOREIGN KEY ("address_id") REFERENCES "addresses" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "clients" ADD FOREIGN KEY ("squad_id") REFERENCES "squads" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
 
-COMMENT ON COLUMN "meeting"."mt_type" IS 'Define qual tabela de analytic aplica: SALESPERSON -> meeting_performance_analyse, DIRECTOR -> meeting_strategic_analyse';
+ALTER TABLE "meetings" ADD FOREIGN KEY ("client_id") REFERENCES "clients" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "meetings" ADD FOREIGN KEY ("transcript_id") REFERENCES "transcripts" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
 
-COMMENT ON COLUMN "client"."cl_revenue" IS 'faturamento mensal';
+ALTER TABLE "squads" ADD FOREIGN KEY ("manager_id") REFERENCES "managers" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
 
-COMMENT ON COLUMN "transcript_chunks"."tc_transcript_id" IS 'Identificador da transcrição';
+ALTER TABLE "user_profiles" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "user_profiles" ADD FOREIGN KEY ("profile_id") REFERENCES "profiles" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
 
-COMMENT ON COLUMN "transcript_chunks"."tc_embedding" IS 'Vetor de embedding gerado pelo modelo local (384 dimensões)';
+ALTER TABLE "users" ADD FOREIGN KEY ("address_id") REFERENCES "addresses" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "users" ADD FOREIGN KEY ("created_by") REFERENCES "users" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
 
-COMMENT ON COLUMN "audit"."au_entity_name" IS 'Nome da entidade do banco de dados';
+ALTER TABLE "client_analyses" ADD FOREIGN KEY ("client_id") REFERENCES "clients" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
 
-COMMENT ON COLUMN "audit"."au_user_id" IS 'Usuário que realizou a alteração';
+-- CORRIGIDO: referenciava a coluna "muser_id" (typo), que não existe.
+ALTER TABLE "managers" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "managers" ADD FOREIGN KEY ("created_by") REFERENCES "users" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
 
-COMMENT ON COLUMN "audit"."au_created_at" IS 'Data de criação';
+ALTER TABLE "messages" ADD FOREIGN KEY ("session_id") REFERENCES "sessions" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
 
-COMMENT ON COLUMN "audit"."au_previous" IS 'último valor antes da modificação';
+ALTER TABLE "transcript_chunks" ADD FOREIGN KEY ("transcript_id") REFERENCES "transcripts" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
 
-COMMENT ON COLUMN "audit"."au_new" IS 'novo valor após a modificação';
+ALTER TABLE "meeting_performance_analyses" ADD FOREIGN KEY ("meeting_id") REFERENCES "meetings" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
 
-COMMENT ON COLUMN "meeting_strategic_analyse"."sa_client_id" IS 'Desnormalizado de meeting.mt_client_id para evitar join -- mantido em sincronia pela aplicação';
+ALTER TABLE "meeting_strategic_analyses" ADD FOREIGN KEY ("meeting_id") REFERENCES "meetings" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "meeting_strategic_analyses" ADD FOREIGN KEY ("client_id") REFERENCES "clients" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
 
-ALTER TABLE "meeting_employee" ADD FOREIGN KEY ("me_user_profile_id") REFERENCES "user_profile" ("up_id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "meeting_strategic_scores" ADD FOREIGN KEY ("meeting_id") REFERENCES "meetings" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "meeting_strategic_scores" ADD FOREIGN KEY ("client_id") REFERENCES "clients" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
 
-ALTER TABLE "meeting_employee" ADD FOREIGN KEY ("me_meeting_id") REFERENCES "meeting" ("mt_id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "meeting_performance_scores" ADD FOREIGN KEY ("meeting_id") REFERENCES "meetings" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "meeting_performance_scores" ADD FOREIGN KEY ("salesperson_id") REFERENCES "salespersons" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
 
-ALTER TABLE "session" ADD FOREIGN KEY ("ss_user_id") REFERENCES "user" ("us_uid") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "salesperson" ADD FOREIGN KEY ("sp_user_id") REFERENCES "user" ("us_uid") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "client" ADD FOREIGN KEY ("cl_address_id") REFERENCES "address" ("ad_id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "meeting" ADD FOREIGN KEY ("mt_client_id") REFERENCES "client" ("cl_id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "squad" ADD FOREIGN KEY ("fk_sq_manager_id") REFERENCES "manager" ("mg_id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "user_profile" ADD FOREIGN KEY ("up_user_id") REFERENCES "user" ("us_uid") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "meeting" ADD FOREIGN KEY ("mt_transcript_id") REFERENCES "transcript" ("tr_id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "user" ADD FOREIGN KEY ("us_address_id") REFERENCES "address" ("ad_id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "client_analyse" ADD FOREIGN KEY ("ca_client_id") REFERENCES "client" ("cl_id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "manager" ADD FOREIGN KEY ("mg_user_id") REFERENCES "user" ("us_uid") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "manager" ADD FOREIGN KEY ("mg_created_by") REFERENCES "user" ("us_uid") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "user" ADD FOREIGN KEY ("us_created_by") REFERENCES "user" ("us_id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "message" ADD FOREIGN KEY ("ms_session_id") REFERENCES "session" ("ss_id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "salesperson" ADD FOREIGN KEY ("sp_squad_id") REFERENCES "squad" ("sq_id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "user_profile" ADD FOREIGN KEY ("up_profile_id") REFERENCES "profile" ("pf_id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "transcript_chunks" ADD FOREIGN KEY ("tc_transcript_id") REFERENCES "transcript" ("tr_id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "meeting_performance_analyse" ADD FOREIGN KEY ("pa_meeting_id") REFERENCES "meeting" ("mt_id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "meeting_strategic_analyse" ADD FOREIGN KEY ("sa_meeting_id") REFERENCES "meeting" ("mt_id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "meeting_strategic_analyse" ADD FOREIGN KEY ("sa_client_id") REFERENCES "client" ("cl_id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "audit" ADD FOREIGN KEY ("au_user_id") REFERENCES "user" ("us_uid") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;
-
-CREATE ROLE ai_role;
-
-GRANT USAGE ON SCHEMA public TO ai_role;
-
-GRANT SELECT ON
-  "user",
-  client,
-  client_analyse,
-  meeting,
-  manager,
-  meeting_employee,
-  meeting_performance_analyse,
-  meeting_strategic_analyse,
-  salesperson,
-  transcript,
-  session,
-  message
-TO ai_role;
-
-GRANT SELECT, INSERT, DELETE ON transcript_chunks TO ai_role;
-
-GRANT UPDATE (mt_embeddings) ON meeting TO ai_role;
-GRANT UPDATE (cl_embeddings) ON client TO ai_role;
-
-CREATE ROLE totvsai LOGIN PASSWORD 'totvsai' IN ROLE ai_role;
+ALTER TABLE "audits" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION DEFERRABLE INITIALLY IMMEDIATE;

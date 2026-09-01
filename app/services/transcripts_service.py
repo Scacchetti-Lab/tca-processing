@@ -23,7 +23,7 @@ _LOCUTOR_PLACEHOLDER = "§LOC{}§"
 _ANON_PLACEHOLDER = "§ANON{}§"
 
 
-USE_DB = bool(getenv('USE_DATABASE'))
+USE_DB = False
 
 if TYPE_CHECKING:
     from app.db_connect import SessionDep
@@ -61,7 +61,7 @@ def get_transcript_by_id(id: str, session: SessionDep | None = None) -> str | No
 
     transcript_model = res.result
     if isinstance(transcript_model, transcript):
-        return transcript_model.tr_raw_transcript
+        return transcript_model.raw_transcript
     return None
 
 def clean_transcript(raw_transcript: str) -> str:

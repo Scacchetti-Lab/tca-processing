@@ -2,7 +2,6 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from sentence_transformers import SentenceTransformer
 from app.models import meeting, client
 from app.models.transcript import transcript_chunks
-from typing import List
 from uuid import UUID, uuid4
 from datetime import datetime
 from app.db_connect import SessionDep
@@ -18,11 +17,11 @@ def add_transcript_embeddings(transcript_id: str, chunks: list[str], embeddings,
         chunk_models: list['transcript_chunks'] = []
         for chunk, embedding in zip(chunks, embeddings):
             chunk_models.append(transcript_chunks(
-                tc_id=uuid4(),
-                tc_chunk_text=chunk,
-                tc_created_at=datetime.now(),
-                tc_embedding=embedding,
-                tc_transcript_id=transcript_uuid
+                id=uuid4(),
+                chunk_text=chunk,
+                created_at=datetime.now(),
+                embedding=embedding,
+                transcript_id=transcript_uuid
             ))
         res = transcript_repository.save_chunks(chunk_models)
 
@@ -52,25 +51,25 @@ def generate_chunks(transcript_sliced: str):
 
 def _format_meeting_to_embbeding(raw_meeting: meeting):
     partes = [
-        f"Reunião: {raw_meeting.mt_title}",
-        f"Cliente: {raw_meeting.mt_client.cl_name}",
-        f"Tipo: {raw_meeting.mt_type}",
+        f"Reunião: {raw_meeting.title}",
+        f"Cliente: {raw_meeting.client.name}",
+        f"Tipo: {raw_meeting.type}",
     ]
-    if raw_meeting.mt_priority:
-        partes.append(f"Prioridade: {raw_meeting.mt_priority}")
-    if raw_meeting.mt_summary:
-        partes.append(f"Resumo: {raw_meeting.mt_summary}")
-    if raw_meeting.mt_feedback:
-        partes.append(f"Feedback: {raw_meeting.mt_feedback}")
+    if raw_meeting.priority:
+        partes.append(f"Prioridade: {raw_meeting.priority}")
+    if raw_meeting.summary:
+        partes.append(f"Resumo: {raw_meeting.summary}")
+    if raw_meeting.feedback:
+        partes.append(f"Feedback: {raw_meeting.feedback}")
     return ". ".join(partes)
 
 
 def _format_client_to_embbeding(raw_client: client):
-    resumos = " ".join(m.mt_summary for m in raw_client.cl_meetings if m.mt_summary)
+    resumos = " ".join(m.summary for m in raw_client.meetings if m.summary)
     return (
-        f"{raw_client.cl_name}, também conhecida como {raw_client.cl_fantasy_name}. "
-        f"Faturamento mensal de R$ {raw_client.cl_revenue}. "
-        f"Status atual do relacionamento: {raw_client.cl_status}. "
+        f"{raw_client.name}, também conhecida como {raw_client.fantasy_name}. "
+        f"Faturamento mensal de R$ {raw_client.revenue}. "
+        f"Status atual do relacionamento: {raw_client.status}. "
         f"Histórico de reuniões: {resumos}"
     )
     

@@ -11,28 +11,27 @@ if TYPE_CHECKING:
 
 
 class client(SQLModel, table=True):
-    cl_id: UUID = Field(default_factory=uuid4, primary_key=True)
-    cl_name: str
-    cl_fantasy_name: str
-    cl_cnpj: str = Field(max_length=14, unique=True)
-    cl_address_id: UUID
-    cl_revenue: float = Field(decimal_places=2)
-    cl_status: COMPANY_STATUS = Field(sa_column=Column(String(255), nullable=False))
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    name: str
+    fantasy_name: str
+    cnpj: str = Field(max_length=14, unique=True)
+    address_id: UUID
+    revenue: float = Field(decimal_places=2)
+    status: COMPANY_STATUS = Field(sa_column=Column(String(255), nullable=False))
     
-    cl_embeddings: list[float] = Field(sa_column=Column(Vector(384), nullable=False))
+    embeddings: list[float] = Field(sa_column=Column(Vector(384), nullable=False))
 
-    cl_meetings: list['meeting'] = Relationship(back_populates='mt_client')
-    cl_client_analyse: 'client_analyse' = Relationship(back_populates='ca_client')
-    cl_strategic_analyses: list['meeting_strategic_analyse'] = Relationship(back_populates='sa_client')
+    meetings: list['meeting'] = Relationship(back_populates='client')
+    client_analyse: 'client_analyse' = Relationship(back_populates='client')
+    strategic_analyses: list['meeting_strategic_analyse'] = Relationship(back_populates='client')
 
 class client_analyse(SQLModel, table=True):
-    ca_id: UUID = Field(default_factory=uuid4, primary_key=True)
-    ca_performance: int | None = Field(default=None, decimal_places=1)
-    ca_closing_probability: int | None = Field(default=None, decimal_places=1)
-    ca_problem_understanding: int | None = Field(default=None, decimal_places=1)
-    ca_risk: int | None = Field(default=None)
-    ca_financial_impact: float | None = Field(default=None, decimal_places=2)
-    ca_financial_status: FINANCIAL_STATUS | None = Field(default=None, sa_column=Column(String(255), nullable=True))
-    
-    ca_client_id: UUID = Field(foreign_key='client.cl_id', unique=True)
-    ca_client: client = Relationship(back_populates='cl_client_analyse')
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    performance: int | None = Field(default=None, decimal_places=1)
+    closing_probability: int | None = Field(default=None, decimal_places=1)
+    problem_understanding: int | None = Field(default=None, decimal_places=1)
+    risk: int | None = Field(default=None)
+    financial_impact: float | None = Field(default=None, decimal_places=2)
+    financial_status: FINANCIAL_STATUS | None = Field(default=None, sa_column=Column(String(255), nullable=True))
+    client_id: UUID = Field(foreign_key='client.id', unique=True)
+    client: client = Relationship(back_populates='client_analyse')

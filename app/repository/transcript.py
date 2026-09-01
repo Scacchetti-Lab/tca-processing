@@ -48,7 +48,7 @@ class TranscriptRepository(TranscriptInterface):
     def search_simmiliarities(self, embedding_prompt: list[float]) -> RespositoryModel:
         try:
             query = select(transcript_chunks).order_by(
-                transcript_chunks.tc_embedding.cosine_distance(embedding_prompt)  # type: ignore[reportAttributeAccessIssue]
+                transcript_chunks.embedding.cosine_distance(embedding_prompt)  # type: ignore[reportAttributeAccessIssue]
             ).limit(5)
 
             chunks = self.session.exec(query).all()

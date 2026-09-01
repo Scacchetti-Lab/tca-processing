@@ -7,7 +7,6 @@ from app.types.chats_models import ChatBotResponse as _ChatBotResponse
 from app.types.transcripts_models import TranscriptAnalyse, TranscriptPayload
 from app.types.response_model import ResponseModel
 from fastapi import status
-from typing import Literal
 from app.helpers.create_context import build_extraction_system_instruction
 
 __load_dotenv() 

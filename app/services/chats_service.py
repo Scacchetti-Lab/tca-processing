@@ -39,7 +39,7 @@ def search_transcripts_relationated(prompt: str, session: SessionDep, model: Mod
 
 def __make_rag_context(chunks) -> str:
     return "\n\n".join(
-        f"[Trecho da reunião {c.tc_transcript_id}]\n{c.tc_chunk_text}"
+        f"[Trecho da reunião {c.transcript_id}]\n{c.chunk_text}"
         for c in chunks
     )
 

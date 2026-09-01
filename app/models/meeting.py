@@ -12,61 +12,61 @@ if TYPE_CHECKING:
     from models.transcript import transcript
 
 class meeting(SQLModel, table=True):
-    mt_id: UUID = Field(default_factory=uuid4, primary_key=True)
-    mt_totvs_id: int | None = Field(unique=True, index=True)
-    mt_title: str = Field(unique=True)
-    mt_duration_min: int
-    mt_summary: str | None = Field(default=None, nullable=True)
-    mt_scheduled: datetime
-    mt_status: Literal['SCHEDULED', 'IN_PROGRESS' 'CANCELLED', 'COMPLETED'] = Field(sa_column=Column(String(255), nullable=False), default='SCHEDULED')
-    mt_performance_avg: float | None = Field(default=None, nullable=True) # Porcentagem do desempenho da reunião
-    mt_type: TRANSCRIPT_TYPE = Field(sa_column=Column(String(255), nullable=False))
-    mt_feedback: str
-    mt_priority: INSIGHT_PRIORITY | None = Field(sa_column=Column(String(255), nullable=True), default=None)
-    mt_is_deleted: bool = Field(default=False)
-    mt_embeddings: list[float] | None = Field(default=None, sa_column=Column(Vector(384), nullable=True))
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    totvs_id: int | None = Field(unique=True, index=True)
+    title: str = Field(unique=True)
+    duration_min: int
+    summary: str | None = Field(default=None, nullable=True)
+    scheduled: datetime
+    status: Literal['SCHEDULED', 'IN_PROGRESS' 'CANCELLED', 'COMPLETED'] = Field(sa_column=Column(String(255), nullable=False), default='SCHEDULED')
+    performance_avg: float | None = Field(default=None, nullable=True) # Porcentagem do desempenho da reunião
+    type: TRANSCRIPT_TYPE = Field(sa_column=Column(String(255), nullable=False))
+    feedback: str
+    priority: INSIGHT_PRIORITY | None = Field(sa_column=Column(String(255), nullable=True), default=None)
+    is_deleted: bool = Field(default=False)
+    embeddings: list[float] | None = Field(default=None, sa_column=Column(Vector(384), nullable=True))
 
-    mt_transcript_id: UUID = Field(foreign_key='transcript.tr_id', unique=True, index=True)
-    mt_transcript: 'transcript' = Relationship(back_populates='tr_meeting')
+    transcript_id: UUID = Field(foreign_key='transcript.id', unique=True, index=True)
+    transcript: 'transcript' = Relationship(back_populates='meeting')
 
-    mt_client_id: UUID = Field(foreign_key='client.cl_id', nullable=False)
-    mt_client: 'client' = Relationship(back_populates='cl_meetings')
+    client_id: UUID = Field(foreign_key='client.id', nullable=False)
+    client: 'client' = Relationship(back_populates='meetings')
 
-    mt_strategic_analyse: 'meeting_strategic_analyse' = Relationship(back_populates='sa_meeting')
-    mt_performance_analyse: 'meeting_performance_analyse' = Relationship(back_populates='pa_meeting')
+    strategic_analyse: 'meeting_strategic_analyse' = Relationship(back_populates='meeting')
+    performance_analyse: 'meeting_performance_analyse' = Relationship(back_populates='meeting')
 
-    mt_strategic_analyse: 'meeting_strategic_analyse' = Relationship(back_populates='sa_meeting')
-    mt_performance_analyse: 'meeting_performance_analyse' = Relationship(back_populates='pa_meeting')
-    mt_employees: list['meeting_employee'] = Relationship(back_populates='me_meeting')
+    strategic_analyse: 'meeting_strategic_analyse' = Relationship(back_populates='meeting')
+    performance_analyse: 'meeting_performance_analyse' = Relationship(back_populates='meeting')
+    employees: list['meeting_employee'] = Relationship(back_populates='meeting')
 
 class meeting_employee(SQLModel, table=True):
-    __table_args__ = (UniqueConstraint('me_meeting_id', 'me_user_profile_id'),)
+    __table_args__ = (UniqueConstraint('meeting_id', 'user_profile_id'),)
 
-    me_id: UUID = Field(default_factory=uuid4, primary_key=True)
-    me_feedback_tip: str
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    feedback_tip: str
 
-    me_meeting_id: UUID = Field(foreign_key='meeting.mt_id', index=True)
-    me_meeting: meeting = Relationship(back_populates='mt_employees')
+    meeting_id: UUID = Field(foreign_key='meeting.id', index=True)
+    meeting: meeting = Relationship(back_populates='employees')
 
-    me_user_profile_id: UUID = Field(foreign_key='user_profile.up_id', index=True)
+    user_profile_id: UUID = Field(foreign_key='user_profile.up_id', index=True)
 
 class meeting_strategic_analyse(SQLModel, table=True):
-    sa_id: UUID = Field(default_factory=uuid4, primary_key=True)
-    sa_employees_performance: float
-    sa_company_status: COMPANY_STATUS = Field(sa_column=Column(String(255), nullable=False))
-    sa_company_performance: float
-    sa_closing_probability: float
-    sa_problem_understanding: float
-    sa_risk: float
-    sa_financial_impact: float
-    sa_financial_impact_status: FINANCIAL_STATUS = Field(sa_column=Column(String(255), nullable=False))
-    sa_created_at: datetime = Field(default_factory=datetime.now)
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    employees_performance: float
+    company_status: COMPANY_STATUS = Field(sa_column=Column(String(255), nullable=False))
+    company_performance: float
+    closing_probability: float
+    problem_understanding: float
+    risk: float
+    financial_impact: float
+    financial_impact_status: FINANCIAL_STATUS = Field(sa_column=Column(String(255), nullable=False))
+    created_at: datetime = Field(default_factory=datetime.now)
 
-    sa_meeting_id: UUID = Field(foreign_key='meeting.mt_id', unique=True, index=True)
-    sa_meeting: meeting = Relationship(back_populates='mt_strategic_analyse')
+    meeting_id: UUID = Field(foreign_key='meeting.id', unique=True, index=True)
+    meeting: meeting = Relationship(back_populates='strategic_analyse')
 
-    sa_client_id: UUID = Field(foreign_key='client.cl_id', index=True)
-    sa_client: 'client' = Relationship(back_populates='cl_strategic_analyses')
+    client_id: UUID = Field(foreign_key='client.id', index=True)
+    client: 'client' = Relationship(back_populates='strategic_analyses')
 
 
 class meeting_performance_analyse(SQLModel, table=True):
@@ -80,5 +80,5 @@ class meeting_performance_analyse(SQLModel, table=True):
     pa_tips: str
     pa_created_at: datetime = Field(default_factory=datetime.now)
 
-    pa_meeting_id: UUID = Field(foreign_key='meeting.mt_id', unique=True, index=True)
-    pa_meeting: meeting = Relationship(back_populates='mt_performance_analyse')
+    pa_meeting_id: UUID = Field(foreign_key='meeting.id', unique=True, index=True)
+    pa_meeting: meeting = Relationship(back_populates='performance_analyse')
