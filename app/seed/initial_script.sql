@@ -10,19 +10,20 @@ CREATE EXTENSION IF NOT EXISTS vector;
 CREATE TABLE "users" (
   "id" UUID NOT NULL DEFAULT (gen_random_uuid()),
   "fullname" VARCHAR(255) NOT NULL,
-  "username" VARCHAR(255) UNIQUE NOT NULL,
+  "username" VARCHAR(100) UNIQUE NOT NULL,
   "cpf" CHAR(11) UNIQUE NOT NULL,
-  "mobilephone" VARCHAR(255),
+  "mobilephone" VARCHAR(50),
   "birthdate" DATE NOT NULL,
   "email" VARCHAR(255) NOT NULL,
   "password" VARCHAR(255) NOT NULL,
   "profilephoto" VARCHAR(255),
   "address_id" UUID NOT NULL,
   "score" INTEGER DEFAULT 0,
-  "score_type" VARCHAR(255) CHECK ("score_type" IN ('PERFORMANCE', 'STRATEGIC')),
   "ai_token_used" INTEGER DEFAULT 0,
-  "status" VARCHAR(255) NOT NULL CHECK ("status" IN ('FORCE_CHANGE_PASSWORD', 'VERIFIED', 'WAITING_VERIFY', 'BANNED', 'ACTIVE', 'INACTIVE')),
+  "status" VARCHAR(50) NOT NULL CHECK ("status" IN ('FORCE_CHANGE_PASSWORD', 'ACTIVE', 'INACTIVE', 'BANNED', 'FIRST_LOGIN', 'VERIFYING_MFA')),
   "is_deleted" BOOLEAN NOT NULL DEFAULT false,
+  "use_mfa" BOOLEAN NOT NULL DEFAULT false,
+  "mfa_token" VARCHAR(255),
   "modified_on" TIMESTAMPTZ NOT NULL DEFAULT (now()),
   "created_by" UUID,
   "created_on" TIMESTAMPTZ NOT NULL DEFAULT (now()),
@@ -52,7 +53,7 @@ CREATE TABLE "addresses" (
 CREATE TABLE "profiles" (
   "id" UUID NOT NULL DEFAULT (gen_random_uuid()),
   "name" VARCHAR(255) NOT NULL,
-  "avg_salary" DECIMAL(8,2),
+  "score_type" VARCHAR(50) CHECK ("score_type" IN ('PERFORMANCE', 'STRATEGIC')),
   "is_admin" BOOLEAN NOT NULL DEFAULT false,
   PRIMARY KEY ("id")
 );
@@ -115,13 +116,12 @@ CREATE TABLE "managers" (
 -- =========================================================
 CREATE TABLE "meetings" (
   "id" UUID NOT NULL DEFAULT (gen_random_uuid()),
-  "totvs_id" INTEGER UNIQUE NOT NULL,
+  "totvs_id" INTEGER UNIQUE,
   "transcript_id" UUID UNIQUE NOT NULL,
   "title" VARCHAR(255) NOT NULL,
   "summary" TEXT NOT NULL,
   "scheduled" TIMESTAMPTZ NOT NULL,
   "duration_min" INTEGER,
-  "type" VARCHAR(50) NOT NULL CHECK ("type" IN ('SALESPERSON', 'DIRECTOR')),
   "status" VARCHAR(50) NOT NULL CHECK ("status" IN ('SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED')),
   "performance_avg" SMALLINT,
   "feedback" TEXT NOT NULL,
@@ -285,7 +285,7 @@ CREATE TABLE "meeting_performance_analyses" (
   "communication_quality" NUMERIC(4,2) NOT NULL,
   "opportunities_seized" NUMERIC(4,2) NOT NULL,
   "objection_handling" NUMERIC(4,2) NOT NULL,
-  "errors_missed_opportunities" NUMERIC(4,2) NOT NULL DEFAULT 0,
+  "missed_opportunities" NUMERIC(4,2) NOT NULL DEFAULT 0,
   "leads_converted" INTEGER NOT NULL,
   "tips" TEXT NOT NULL,
   "created_at" TIMESTAMPTZ NOT NULL DEFAULT (now()),
@@ -301,7 +301,7 @@ CREATE TABLE "meeting_strategic_scores" (
   "client_id" UUID NOT NULL,
   "base_score" NUMERIC(6,2) NOT NULL,
   "multiplier" NUMERIC(3,2) NOT NULL,
-  "carteira_percentage" NUMERIC(6,3),
+  "wallet_percentage" NUMERIC(6,3),
   "financial_impact_level" VARCHAR(20) CHECK ("financial_impact_level" IN ('ALTO', 'MEDIO', 'BAIXO')),
   "financial_factor" NUMERIC(3,2) NOT NULL DEFAULT 1.00,
   "final_score" NUMERIC(8,2) NOT NULL,
@@ -389,9 +389,9 @@ COMMENT ON COLUMN "meeting_strategic_analyses"."client_id" IS 'Desnormalizado de
 COMMENT ON COLUMN "meeting_strategic_analyses"."financial_impact" IS 'Nota qualitativa 0-10 do impacto financeiro (gerada pela IA)';
 COMMENT ON COLUMN "meeting_strategic_analyses"."financial_impact_value" IS 'Valor monetário em risco ou oportunidade identificado na reunião';
 
-COMMENT ON COLUMN "meeting_performance_analyses"."errors_missed_opportunities" IS 'Erros e oportunidades perdidas (0-8) -- SUBTRAI do score base';
+COMMENT ON COLUMN "meeting_performance_analyses"."missed_opportunities" IS 'Erros e oportunidades perdidas (0-8) -- SUBTRAI do score base';
 
-COMMENT ON COLUMN "meeting_strategic_scores"."carteira_percentage" IS 'Percentual do valor em risco/oportunidade sobre a receita total da carteira';
+COMMENT ON COLUMN "meeting_strategic_scores"."wallet_percentage" IS 'Percentual do valor em risco/oportunidade sobre a receita total da carteira';
 COMMENT ON COLUMN "meeting_strategic_scores"."financial_factor" IS 'Fator do ajuste financeiro aplicado (ex: 1.20, 0.90, 1.00)';
 
 COMMENT ON COLUMN "meeting_performance_scores"."base_score" IS 'Nota base coletiva da reunião -- idêntica para todos os vendedores presentes';

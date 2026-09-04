@@ -23,8 +23,6 @@ _LOCUTOR_PLACEHOLDER = "§LOC{}§"
 _ANON_PLACEHOLDER = "§ANON{}§"
 
 
-USE_DB = False
-
 if TYPE_CHECKING:
     from app.db_connect import SessionDep
 
@@ -41,10 +39,10 @@ def get_by_dataframe(id: str):
     return str(df_trs['ANON_TRANSCRICAO'].values[0])
 
 
-def get_transcript_by_id(id: str, session: SessionDep | None = None) -> str | None:
+def get_transcript_by_id(id: str, session: SessionDep | None = None, use_db: bool = False) -> str | None:
     ''''Partindo de um Id especificado, retorne a transcrição'''
     
-    if not USE_DB:
+    if not use_db:
         return get_by_dataframe(id)
 
     if session is None:

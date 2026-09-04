@@ -35,7 +35,7 @@ def analyse_transcript(payload: TranscriptPayload | str, tries: int = 3) -> Resp
 
         except ClientError as ex:
             if ex.code == 429 and i < tries - 1:
-                sleep(15 * (2 ** i))   # 15s, 30s
+                sleep(15 * (2 ** i))
                 continue
 
             if ex.code == 429:
@@ -105,7 +105,7 @@ def _create_transcript_interactor(payload: TranscriptPayload) -> TranscriptAnaly
         @request: str = Transcricão pura
     '''
     prompt = f'Analise a seguinte transcrição de reunião e retorne o JSON estruturado conforme instruído:\n\n{payload.transcript}'
-    context = build_extraction_system_instruction(payload.score_type)
+    context = build_extraction_system_instruction()
     
     interaction = __client.interactions.create(
         model=__GEMINI_MODEL_NAME,

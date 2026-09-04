@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 from app.services import gemini_client_service as gen, transcripts_service as trs
 from app.types.transcripts_models import TranscriptAnalyse, TranscriptReturnJson, TranscriptPayload
 from app.types.response_model import ResponseModel, ResponseBaseModel
-from app.constants.transcript import SCORE_TYPE
+from app.constants.transcript import PROFILE_TYPES
 import traceback
 from pydantic import ValidationError
 from app.db_connect import SessionDep
@@ -16,12 +16,12 @@ from app.db_connect import SessionDep
 router = APIRouter()
 
 @router.post("/process", response_model=ResponseBaseModel, status_code=status.HTTP_201_CREATED)
-async def process_transcript(transcript_id: str, score_type: SCORE_TYPE, session: SessionDep) -> JSONResponse:
+async def process_transcript(transcript_id: str, profile_type: PROFILE_TYPES, use_db: bool, session: SessionDep) -> JSONResponse:
     try:
-        if (score_type not in ['STRATEGIC', 'PERFORMANCE']):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='O tipo do score enviado é inválido.')
+        if (profile_type not in ['SALESPERSON', 'DIRECTOR', 'MANAGER']):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='O perfil enviado é inválido.')
 
-        transcript_data = trs.get_transcript_by_id(transcript_id, session)
+        transcript_data = trs.get_transcript_by_id(transcript_id, session, use_db)
 
         if transcript_data is None:
             raise HTTPException(
@@ -37,7 +37,7 @@ async def process_transcript(transcript_id: str, score_type: SCORE_TYPE, session
             cleaned_text = trs.clean_transcript(transcript_data.transcription)
 
         payload = TranscriptPayload(
-            score_type=score_type,
+            profile=profile_type,
             transcript=cleaned_text
         )
         

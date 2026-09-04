@@ -3,7 +3,7 @@ from pgvector.sqlalchemy import Vector
 from sqlalchemy import Column, String, UniqueConstraint
 from sqlmodel import SQLModel, Field, Relationship
 from uuid import UUID, uuid4
-from app.constants.transcript import COMPANY_STATUS, FINANCIAL_STATUS, TRANSCRIPT_TYPE, INSIGHT_PRIORITY
+from app.constants.transcript import COMPANY_STATUS, FINANCIAL_STATUS, INSIGHT_PRIORITY
 from datetime import datetime
 from typing import Literal
 
@@ -20,7 +20,6 @@ class meeting(SQLModel, table=True):
     scheduled: datetime
     status: Literal['SCHEDULED', 'IN_PROGRESS' 'CANCELLED', 'COMPLETED'] = Field(sa_column=Column(String(255), nullable=False), default='SCHEDULED')
     performance_avg: float | None = Field(default=None, nullable=True) # Porcentagem do desempenho da reunião
-    type: TRANSCRIPT_TYPE = Field(sa_column=Column(String(255), nullable=False))
     feedback: str
     priority: INSIGHT_PRIORITY | None = Field(sa_column=Column(String(255), nullable=True), default=None)
     is_deleted: bool = Field(default=False)
@@ -70,15 +69,15 @@ class meeting_strategic_analyse(SQLModel, table=True):
 
 
 class meeting_performance_analyse(SQLModel, table=True):
-    pa_id: UUID = Field(default_factory=uuid4, primary_key=True)
-    pa_engagement: float
-    pa_opportunities_seized: float
-    pa_communication_quality: float
-    pa_objection_handling: float
-    pa_converted_potencials: float
-    pa_leads_converted: int
-    pa_tips: str
-    pa_created_at: datetime = Field(default_factory=datetime.now)
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    engagement: float
+    opportunities_seized: float
+    communication_quality: float
+    objection_handling: float
+    converted_potencials: float
+    leads_converted: int
+    tips: str
+    created_at: datetime = Field(default_factory=datetime.now)
 
-    pa_meeting_id: UUID = Field(foreign_key='meeting.id', unique=True, index=True)
-    pa_meeting: meeting = Relationship(back_populates='performance_analyse')
+    meeting_id: UUID = Field(foreign_key='meeting.id', unique=True, index=True)
+    meeting: meeting = Relationship(back_populates='performance_analyse')
