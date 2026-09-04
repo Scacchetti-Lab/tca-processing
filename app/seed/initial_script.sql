@@ -9,18 +9,18 @@ CREATE EXTENSION IF NOT EXISTS vector;
 -- =========================================================
 CREATE TABLE "users" (
   "id" UUID NOT NULL DEFAULT (gen_random_uuid()),
-  "fullname" VARCHAR(255) NOT NULL,
+  "full_name" VARCHAR(255) NOT NULL,
   "username" VARCHAR(100) UNIQUE NOT NULL,
   "cpf" CHAR(11) UNIQUE NOT NULL,
-  "mobilephone" VARCHAR(50),
-  "birthdate" DATE NOT NULL,
+  "mobile_phone" VARCHAR(50),
+  "birth_date" DATE NOT NULL,
   "email" VARCHAR(255) NOT NULL,
   "password" VARCHAR(255) NOT NULL,
-  "profilephoto" VARCHAR(255),
+  "profile_photo_url" VARCHAR(255),
   "address_id" UUID NOT NULL,
   "score" INTEGER DEFAULT 0,
   "ai_token_used" INTEGER DEFAULT 0,
-  "status" VARCHAR(50) NOT NULL CHECK ("status" IN ('FORCE_CHANGE_PASSWORD', 'ACTIVE', 'INACTIVE', 'BANNED', 'FIRST_LOGIN', 'VERIFYING_MFA')),
+  "status" VARCHAR(50) NOT NULL CHECK ("status" IN ('FORCE_CHANGE_PASSWORD', 'ACTIVE', 'INACTIVE', 'BANNED', 'FIRST_LOGIN', 'CHECKING_MFA')),
   "is_deleted" BOOLEAN NOT NULL DEFAULT false,
   "use_mfa" BOOLEAN NOT NULL DEFAULT false,
   "mfa_token" VARCHAR(255),
@@ -53,7 +53,6 @@ CREATE TABLE "addresses" (
 CREATE TABLE "profiles" (
   "id" UUID NOT NULL DEFAULT (gen_random_uuid()),
   "name" VARCHAR(255) NOT NULL,
-  "score_type" VARCHAR(50) CHECK ("score_type" IN ('PERFORMANCE', 'STRATEGIC')),
   "is_admin" BOOLEAN NOT NULL DEFAULT false,
   PRIMARY KEY ("id")
 );
