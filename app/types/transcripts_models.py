@@ -1,17 +1,24 @@
 from __future__ import annotations
 from pydantic import BaseModel
-from typing import List
+from typing import List, Literal
 from app.constants.transcript import COMPANY_STATUS, FINANCIAL_STATUS, INSIGHT_PRIORITY, PROFILE_TYPES, SCORE_TYPE, TRANSCRIPT_STATUS
+from app.types.client_models import ClientContext
+
+class Stakeholder(BaseModel):
+    name: str
+    role: str | None = None
+    side: Literal['CLIENT', 'TOTVS', 'UNKNOWN']
 
 class Insights(BaseModel):    
     priority: INSIGHT_PRIORITY
-    avg_grande: int
+    rating: int
     tips: str
 
 class TranscriptDescription(BaseModel):
     company_name: str
     company_representor: str
-    stakeholders: List[str]
+    segment: str
+    stakeholders: List[Stakeholder]
     meeting_summary: str
 
 class AnalayseStrategicDefinitions(BaseModel):                      
@@ -35,7 +42,6 @@ class AnalyseStrategicMetrics(BaseModel):
 class AnalayseCustomerDefinitions(BaseModel):
     metrics: AnalayseCustomerMetrics
     insights: Insights
-    segment: str
     feedback: str
 
 class AnalayseCustomerMetrics(BaseModel):
@@ -65,3 +71,9 @@ class TranscriptReturnJson(BaseModel):
 class TranscriptPayload(BaseModel):
     transcript: str
     profile: PROFILE_TYPES | None = None
+    client: ClientContext | None = None
+
+class TranscriptRequest(BaseModel):
+    transcript_id: str
+    profile: PROFILE_TYPES | None = None
+    client_context: ClientContext | None = None

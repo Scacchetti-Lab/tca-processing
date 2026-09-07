@@ -1,6 +1,73 @@
 from app.constants.keywords import PRODUCTS, POSITIVE_WORDS, NEGATIVE_WORDS
+from app.types.client_models import ClientContext
 
-def build_extraction_system_instruction(profile: str | None = None) -> str:
+
+def build_client_context_block(client: ClientContext | None) -> str:
+    """
+    Monta o bloco de contexto do cliente que entra no system_instruction.
+ 
+    Retorna string vazia quando o cliente nao foi informado -- nesse caso o
+    fluxo segue como hoje: a IA extrai company_name da propria transcricao e
+    o Java decide se cadastra um cliente novo.
+    """
+    if client is None:
+        return ""
+ 
+    if client.previous_meetings:
+        historico = "\n".join(
+            f"  {i}. {resumo}"
+            for i, resumo in enumerate(client.previous_meetings, start=1)
+        )
+    else:
+        historico = "(nenhuma reunião anterior registrada)"
+ 
+    return f"""
+Esta reunião pertence a um cliente que já existe no sistema. Use as informações
+abaixo como contexto factual da análise.
+ 
+- Nome: {client.name}
+- Status atual do relacionamento: {client.status}
+ 
+Resumos das reuniões anteriores, da mais antiga para a mais recente:
+{historico}
+ 
+COMO USAR ESTE CONTEXTO:
+ 
+1. RECORRÊNCIA MUDA A GRAVIDADE. Um problema mencionado pela primeira vez é um
+   ponto de atenção; o mesmo problema aparecendo pela terceira reunião seguida é
+   um sinal sério de risco. Da mesma forma, um elogio repetido indica satisfação
+   consolidada, não cortesia pontual. Leve isso em conta ao avaliar 'risk' e
+   'flexibility'.
+ 
+2. VERIFIQUE PROMESSAS ANTERIORES. Se um resumo anterior menciona um compromisso
+   da empresa fornecedora (enviar proposta, resolver chamado, entregar relatório),
+   observe na transcrição atual se ele foi cumprido. Promessa não cumprida e
+   cobrada pelo cliente é sinal forte de risco; promessa cumprida e reconhecida
+   é sinal positivo.
+ 
+3. EVOLUÇÃO DO ESCOPO. Compare o que o cliente usa hoje com o que está sendo
+   discutido. Menção a produtos além dos já contratados indica oportunidade de
+   expansão -- reflita isso em 'company_performance' e nas dicas.
+ 
+4. PERSONALIZE AS DICAS. Com histórico disponível, as dicas de insights devem
+   citar o que já aconteceu, não apenas a reunião atual. Ex: "confirme a entrega
+   do relatório prometido na reunião anterior antes de apresentar a proposta".
+ 
+5. AVALIE ESTA REUNIÃO, NÃO O HISTÓRICO. As notas de todos os critérios devem
+   refletir o que aconteceu NESTA reunião especificamente. O histórico serve para
+   você interpretar o peso e o significado dos sinais, não para puxar as notas
+   para cima ou para baixo por inércia. Uma reunião boa depois de várias ruins
+   continua sendo uma reunião boa -- a tendência ao longo do tempo é calculada
+   separadamente pelo sistema, fora da sua análise.
+ 
+6. NÃO INVENTE CONTINUIDADE. Se a transcrição atual não menciona algo do
+   histórico, não presuma que aquilo continua valendo nem trate como pendência
+   silenciosa. Baseie-se apenas no que foi de fato dito.
+
+"""
+
+
+def build_extraction_system_instruction(profile: str | None = None, client: ClientContext | None = None) -> str:
     """
     Monta o system_instruction de extracao dinamicamente, incorporando as listas
     de vocabulario de referencia. Isso evita hardcodar as listas dentro de um JSON
@@ -26,6 +93,8 @@ def build_extraction_system_instruction(profile: str | None = None) -> str:
         "por causa do perfil.\n"
         if profile else ""
     )
+
+    contexto_cliente = build_client_context_block(client)
 
     return f"""Você é um analista de reuniões comerciais especializado em extrair informações estruturadas de transcrições. Sua tarefa é analisar a transcrição fornecida e retornar SOMENTE um JSON válido seguindo exatamente o schema definido, sem nenhum texto adicional antes ou depois.
 {foco_perfil}
@@ -58,13 +127,26 @@ IMPORTANTE SOBRE AS LISTAS ACIMA: elas são um ponto de partida para calibrar su
 - Ambiguidade dependente de contexto: a palavra "urgente" está na lista de sinais negativos (geralmente indica problema não resolvido), mas em frases como "queremos fechar com urgência" ela sinaliza uma OPORTUNIDADE de fechamento rápido, não um risco. Julgue pelo contexto da frase, não pela palavra isolada.
 - Sinônimos e variações fora da lista: palavras equivalentes que não estão listadas (ex: "encantado", "péssimo") devem ser tratadas com o mesmo peso que teriam se estivessem na lista.
 
+{contexto_cliente}
 =========================================================
 IDENTIFICAÇÃO DA REUNIÃO (basic_description)
 =========================================================
 
-- company_name: razão social ou nome da empresa cliente.
+- company_name: razão social ou nome da empresa cliente. SEMPRE tente identificar, mesmo que mencionado apenas uma vez ou de forma indireta (ex: alguém se apresenta como "sou da TechNova", ou o vendedor diz "aqui na Rede JTP vocês..."). Este campo é usado para cadastrar o cliente no sistema, então é crítico. Só retorne vazio se a transcrição realmente não permitir identificar de qual empresa se trata.
 - company_representor: nome do PRINCIPAL representante da empresa fornecedora (TOTVS) na reunião. Se houver mais de um, retorne apenas o mais atuante -- este campo aceita UMA pessoa, não uma lista.
-- stakeholders: lista com todos os participantes identificados na reunião, de ambos os lados.
+- segment: segmento ou setor de atuação da empresa cliente, inferido do contexto da conversa (ex: "Varejo de combustíveis", "Indústria química", "Serviços financeiros"). Se não for possível inferir com razoável segurança, retorne string vazia.
+- stakeholders: lista com TODOS os participantes identificados na reunião, de ambos os lados. Para cada participante, preencha:
+  * name: nome da pessoa como aparece na transcrição. Se a transcrição usar apenas identificadores genéricos (ex: "Locutor 57"), use esse identificador como nome.
+  * role: cargo ou função da pessoa, quando mencionado ou inferível do contexto (ex: "Gerente de TI", "Executivo de Contas", "Especialista de Produto"). Se não houver informação, retorne null.
+  * side: de qual lado a pessoa está.
+    - TOTVS: representantes da empresa fornecedora (vendedores, especialistas de produto, executivos de conta, pré-vendas).
+    - CLIENT: representantes da empresa cliente (quem está avaliando ou contratando a solução).
+    - UNKNOWN: use quando a transcrição não permitir determinar o lado com segurança. É comum em transcrições que identificam falantes apenas como "Locutor N" sem contexto suficiente. Prefira UNKNOWN a chutar -- uma atribuição errada distorce quem é responsabilizado pela condução da reunião.
+
+  Sinais úteis para determinar o lado: quem apresenta a solução e conduz a demonstração costuma ser TOTVS; quem faz perguntas sobre preço, prazo e adequação às próprias necessidades costuma ser CLIENT. Menções como "aqui na [nome do cliente] a gente..." indicam CLIENT; "nosso sistema faz..." ou "podemos configurar isso pra vocês" indicam TOTVS.
+
+  Inclua o company_representor na lista também -- ele é um stakeholder como os demais, apenas destacado à parte por ser o principal representante da TOTVS.
+
 - meeting_summary: resumo objetivo do que foi discutido, o que ficou decidido e quais são os próximos passos.
 
 STATUS DO PROCESSAMENTO ('status'): use OK se a análise foi concluída normalmente. ANALYZING nunca deve ser retornado por você (é um estado intermediário do sistema). Use ERROR se a transcrição estiver vazia, corrompida ou sem conteúdo analisável.
@@ -117,8 +199,6 @@ performance.metrics:
 
 - leads_converted (NÚMERO INTEIRO): quantidade de leads/oportunidades EFETIVAMENTE confirmadas como convertidas/fechadas durante esta reunião -- não conte potencial nem intenção, apenas confirmação concreta e explícita. Na dúvida, retorne 0.
 
-performance.segment: segmento ou setor de atuação da empresa cliente, inferido do contexto da conversa (ex: "Varejo de combustíveis", "Indústria química", "Serviços financeiros"). Se não for possível inferir com razoável segurança, retorne string vazia.
-
 performance.insights: siga a seção INSIGHTS abaixo, focando na condução da reunião pelo vendedor -- o que corrigir na abordagem, o que manter e ampliar.
 
 performance.feedback: siga a seção FEEDBACK abaixo, analisando a atuação do(s) vendedor(es).
@@ -133,7 +213,7 @@ O insight é o que a pessoa vai LER E APLICAR. Ele não descreve a reunião (iss
 
 - priority (HIGH/MEDIUM/LOW): urgência de agir sobre o que foi identificado. HIGH quando há risco concreto ou janela de oportunidade que se fecha; LOW quando é ajuste fino sem prejuízo imediato.
 
-- avg_grande (NÚMERO INTEIRO de 0 a 10): relevância do achado. Quanto maior, mais determinante ele é para o resultado daquele lado da análise.
+- rating (NÚMERO INTEIRO de 0 a 10): relevância do achado. Quanto maior, mais determinante ele é para o resultado daquele lado da análise.
 
 - tips (TEXTO): de 2 a 4 dicas numeradas (formato "1. ... 2. ... 3. ..."), estratégicas e objetivas. Cada dica deve:
   * Ser acionável -- diga o que fazer, não apenas o que observar. "Enviar a proposta com o comparativo de custo até sexta" é útil; "melhorar a comunicação" não é.

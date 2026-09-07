@@ -3,25 +3,25 @@
 POST   /transcripts/process         # extração via Gemini (faz a limpeza e extração de infos com AI)
 '''
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Body, HTTPException, status
 from fastapi.responses import JSONResponse
 from app.services import gemini_client_service as gen, transcripts_service as trs
-from app.types.transcripts_models import TranscriptAnalyse, TranscriptReturnJson, TranscriptPayload
+from app.types.transcripts_models import TranscriptAnalyse, TranscriptReturnJson, TranscriptPayload, TranscriptRequest
 from app.types.response_model import ResponseModel, ResponseBaseModel
-from app.constants.transcript import PROFILE_TYPES
 import traceback
 from pydantic import ValidationError
 from app.db_connect import SessionDep
+from typing import Annotated
      
 router = APIRouter()
 
 @router.post("/process", response_model=ResponseBaseModel, status_code=status.HTTP_201_CREATED)
-async def process_transcript(transcript_id: str, profile_type: PROFILE_TYPES, use_db: bool, session: SessionDep) -> JSONResponse:
+async def process_transcript(request: Annotated[TranscriptRequest, Body()], session: SessionDep, use_db: bool = True) -> JSONResponse:
     try:
-        if (profile_type not in ['SALESPERSON', 'DIRECTOR', 'MANAGER']):
+        if (request.profile not in ['SALESPERSON', 'DIRECTOR', 'MANAGER']):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='O perfil enviado é inválido.')
 
-        transcript_data = trs.get_transcript_by_id(transcript_id, session, use_db)
+        transcript_data = trs.get_transcript_by_id(request.transcript_id, session, use_db)
 
         if transcript_data is None:
             raise HTTPException(
@@ -37,8 +37,9 @@ async def process_transcript(transcript_id: str, profile_type: PROFILE_TYPES, us
             cleaned_text = trs.clean_transcript(transcript_data.transcription)
 
         payload = TranscriptPayload(
-            profile=profile_type,
-            transcript=cleaned_text
+            profile=request.profile,
+            transcript=cleaned_text,
+            client=request.client_context
         )
         
         gen_analysed = gen.analyse_transcript(payload)

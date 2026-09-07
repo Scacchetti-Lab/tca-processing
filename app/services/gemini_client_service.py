@@ -5,7 +5,7 @@ from dotenv import load_dotenv as __load_dotenv
 from google import genai as __genai
 from google.genai.interactions import Interaction
 from google.genai.errors import ClientError
-from app.constants.ai_context import CHATBOT_CONTEXT as _CHATBOT_CONTEXT, CHATBOT_INITAL as _CHATBOT_INITAL 
+from app.constants.ai_context import CHATBOT_CONTEXT as _CHATBOT_CONTEXT
 from app.types.chats_models import ChatBotResponse as _ChatBotResponse
 from app.types.transcripts_models import TranscriptAnalyse, TranscriptPayload
 from app.types.response_model import ResponseModel
@@ -105,7 +105,7 @@ def _create_transcript_interactor(payload: TranscriptPayload) -> TranscriptAnaly
         @request: str = Transcricão pura
     '''
     prompt = f'Analise a seguinte transcrição de reunião e retorne o JSON estruturado conforme instruído:\n\n{payload.transcript}'
-    context = build_extraction_system_instruction()
+    context = build_extraction_system_instruction(payload.profile, payload.client)
     
     interaction = __client.interactions.create(
         model=__GEMINI_MODEL_NAME,
