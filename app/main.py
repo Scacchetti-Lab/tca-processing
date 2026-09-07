@@ -45,7 +45,7 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)  # comprime respostas acim
 @app.get("/")
 @app.get("/health")
 def root():
-    return {"status": "Ok", "project": "Totvs Commercial AI - Processing", "version": "1.0.0"}
+    return {"status": "Ok", "project": "AI Totvs Commercial (tca-processing)", "version": "1.0.0"}
 
 app.include_router(transcripts.router, prefix="/v1/transcript", tags=["Transcript Routes"], dependencies=[Depends(api_key_header)])
 app.include_router(chats._router, prefix="/v1/chat", tags=["AI Chat Routes"], dependencies=[Depends(api_key_header)])

@@ -6,8 +6,8 @@ from app.types.response_model import RespositoryModel
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from app.models.client import client
-    from app.models.meeting import meeting
+    from app.models.client import clients
+    from app.models.meeting import meetings
 
 class GenericRepository(GenericInterface):
     def __init__(self, session: SessionDep) -> None:
@@ -18,18 +18,18 @@ class GenericRepository(GenericInterface):
             data_value = self.session.get(model, model_id)
 
             if not data_value:
-                return RespositoryModel(message='Nenhum cliente encontrada com esse ID')
+                return RespositoryModel(message='Nenhum cliente encontrado com esse ID')
 
             return RespositoryModel(
                 is_valid=True,
-                message='Cliente encontrada!',
+                message='Cliente encontrado!',
                 result=data_value
             )
         except Exception as ex:
             print(ex)
             return RespositoryModel(
                 is_valid=True,
-                message='Cliente encontrada!',
+                message='Cliente não foi encontrado!',
                 result=None
             )
 

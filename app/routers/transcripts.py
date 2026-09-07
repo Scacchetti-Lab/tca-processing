@@ -65,6 +65,14 @@ async def process_transcript(request: Annotated[TranscriptRequest, Body()], sess
             status_code=httpex.status_code,
             content=ResponseModel(status=httpex.status_code, message=httpex.detail, is_valid=False).__dict__
         )
+    except ValueError as vex:
+        print(f'\033[1;31m[ERRO] {vex}\033[m')
+        print(traceback.format_exc())
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content=ResponseModel(status=status.HTTP_400_BAD_REQUEST, message=f"{vex}").__dict__,
+            media_type="application/json"
+        )
     except Exception as ex:
         print(f'\033[1;31m[ERRO] {ex}\033[m')
         print(traceback.format_exc())

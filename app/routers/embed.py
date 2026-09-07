@@ -7,8 +7,8 @@ from app.services.embed_service import generate_chunks, generate_embeds, add_tra
 from app.db_connect import SessionDep
 from app.deps import ModelDep
 from app.services.generic_service import get_sqlmodel_by_id, add_sqlmodel_embeddings
-from app.models.client import client as cl_model
-from app.models.meeting import meeting as mt_model
+from app.models.client import clients as cl_model
+from app.models.meeting import meetings as mt_model
 from typing import Literal, Annotated
 from app.types.embed_models import *
 

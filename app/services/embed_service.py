@@ -1,6 +1,6 @@
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from sentence_transformers import SentenceTransformer
-from app.models import meeting, client
+from app.models import meetings, clients
 from app.models.transcript import transcript_chunks
 from uuid import UUID, uuid4
 from datetime import datetime
@@ -49,7 +49,7 @@ def generate_chunks(transcript_sliced: str):
     )
     return text_splitter.split_text(transcript_sliced)
 
-def _format_meeting_to_embbeding(raw_meeting: meeting):
+def _format_meeting_to_embbeding(raw_meeting: meetings):
     partes = [
         f"Reunião: {raw_meeting.title}",
         f"Cliente: {raw_meeting.client.name}",
@@ -64,7 +64,7 @@ def _format_meeting_to_embbeding(raw_meeting: meeting):
     return ". ".join(partes)
 
 
-def _format_client_to_embbeding(raw_client: client):
+def _format_client_to_embbeding(raw_client: clients):
     resumos = " ".join(m.summary for m in raw_client.meetings if m.summary)
     return (
         f"{raw_client.name}, também conhecida como {raw_client.fantasy_name}. "
@@ -74,9 +74,9 @@ def _format_client_to_embbeding(raw_client: client):
     )
     
 def generate_embeds(raw_model, model: SentenceTransformer):
-    if isinstance(raw_model, meeting):
+    if isinstance(raw_model, meetings):
         formatted = _format_meeting_to_embbeding(raw_model)
-    elif isinstance(raw_model, client):
+    elif isinstance(raw_model, clients):
         formatted = _format_client_to_embbeding(raw_model)
     else:
         return model.encode(raw_model).tolist()

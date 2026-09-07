@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from app.helpers.is_valid_uuid import is_valid_uuid
 from uuid import UUID
 from app.repository.transcript import TranscriptRepository
-from app.models.transcript import transcript
+from app.models.transcript import transcripts
 
 load_dotenv()
 
@@ -51,14 +51,14 @@ def get_transcript_by_id(id: str, session: SessionDep | None = None, use_db: boo
     transcript_repository = TranscriptRepository(session)
 
     if not is_valid_uuid(id):
-        raise ValueError('ID fornecido é inválido')
+        return None
 
     res = transcript_repository.get_by_id(UUID(id))
     if not res.is_valid:
         return None
 
     transcript_model = res.result
-    if isinstance(transcript_model, transcript):
+    if isinstance(transcript_model, transcripts):
         return transcript_model.raw_transcript
     return None
 

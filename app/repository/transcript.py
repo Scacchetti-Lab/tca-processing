@@ -4,7 +4,7 @@ from .interface.transcript import TranscriptInterface
 from app.types.response_model import RespositoryModel
 from typing import TYPE_CHECKING
 from sqlmodel import select
-from app.models.transcript import transcript_chunks, transcript
+from app.models.transcript import transcript_chunks, transcripts
 from app.db_connect import SessionDep
 
 if TYPE_CHECKING:
@@ -17,7 +17,7 @@ class TranscriptRepository(TranscriptInterface):
 
     def get_by_id(self, transcript_id: UUID) -> RespositoryModel:
         try:
-            transcription = self.session.get(transcript, transcript_id)
+            transcription = self.session.get(transcripts, transcript_id)
 
             if not transcription:
                 return RespositoryModel(message='Nenhuma transcrição encontrada com esse ID')
