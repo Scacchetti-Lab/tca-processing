@@ -10,15 +10,15 @@ from app.services.generic_service import get_sqlmodel_by_id, add_sqlmodel_embedd
 from app.models.client import client as cl_model
 from app.models.meeting import meeting as mt_model
 from typing import Literal, Annotated
-from fastapi.encoders import jsonable_encoder
+from app.types.embed_models import *
 
 _router = APIRouter()
 
 @_router.post("/chunk", response_model=ResponseBaseModel, status_code=status.HTTP_201_CREATED)
-def embed_transcript(transcript_id: str, session: SessionDep, ai_model: ModelDep) -> JSONResponse:
+def embed_transcript(payload: Annotated[ChunkRequets, Body()], session: SessionDep, ai_model: ModelDep) -> JSONResponse:
     '''Gera chunks da transcrição e cria embeddings referente a elas'''
     try:
-        raw_transcript = get_transcript_by_id(transcript_id, session)
+        raw_transcript = get_transcript_by_id(payload.transcript_id, session)
 
         if not raw_transcript:
             raise HTTPException(
@@ -34,7 +34,7 @@ def embed_transcript(transcript_id: str, session: SessionDep, ai_model: ModelDep
                 detail='Falha ao gerar embeddings'
             )
 
-        result = add_transcript_embeddings(transcript_id, chunks, embeddings, session)
+        result = add_transcript_embeddings(payload.transcript_id, chunks, embeddings, session)
 
         if not result.is_valid:
             raise HTTPException(
@@ -68,14 +68,14 @@ def embed_transcript(transcript_id: str, session: SessionDep, ai_model: ModelDep
 
 
 @_router.post("/client", response_model=ResponseBaseModel, status_code=status.HTTP_200_OK)
-def embed_client(client_id: Annotated[str, Body()], session: SessionDep, ai_model: ModelDep) -> JSONResponse:
+def embed_client(payload: Annotated[ClientEmbedd, Body()], session: SessionDep, ai_model: ModelDep) -> JSONResponse:
     '''Cria embeddings com base no histórico do cliente salvo'''
-    return __embed_meeting_or_client('client', client_id, session, ai_model)
+    return __embed_meeting_or_client('client', payload.client_id, session, ai_model)
 
 @_router.post("/meeting", response_model=ResponseBaseModel, status_code=status.HTTP_200_OK)
-def embed_meeting(meeting_id: Annotated[str, Body()], session: SessionDep, ai_model: ModelDep) -> JSONResponse:
+def embed_meeting(payload: Annotated[MeetingEmbedd, Body()], session: SessionDep, ai_model: ModelDep) -> JSONResponse:
     '''Cria embeddings com base no histórico da reunião salva'''
-    return __embed_meeting_or_client('meeting', meeting_id, session, ai_model)
+    return __embed_meeting_or_client('meeting', payload.meeting_id, session, ai_model)
 
 
 def __embed_meeting_or_client(model_name: Literal['client', 'meeting'], model_id, session: SessionDep, ai_model: ModelDep) -> JSONResponse:

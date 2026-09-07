@@ -10,25 +10,26 @@ POST   /chats/client/{id}/predict        # Gera uma previsão com base no id do 
 import traceback
 from fastapi import APIRouter, Body, status, HTTPException
 from fastapi.responses import JSONResponse
+from app.types.chats_models import *
 from app.types.response_model import ResponseBaseModel as _ResponseBaseModel, ResponseModel as _ResponseModel
 import app.services.chats_service as _ch
 import app.services.gemini_client_service as _gen
-from typing import Literal, Annotated
+from typing import Annotated
 from app.db_connect import SessionDep
 from app.deps import ModelDep
 
 _router = APIRouter()
 
 @_router.post('/messages', response_model=_ResponseBaseModel, status_code=status.HTTP_200_OK)
-async def init_chat(message: Annotated[str, Body()], session: SessionDep, model: ModelDep, previous_interation_id: Annotated[str | None, Body()] = None):
+async def init_chat(payload: Annotated[ChatMessagesResponse, Body()], session: SessionDep, model: ModelDep):
     try:
-        response = await _ch.make_ai_response(message, session, model, previous_interation_id)
+        response = await _ch.make_ai_response(payload.message, session, model, payload.previous_interact_id)
 
         if not response.is_valid:
             raise HTTPException(status.HTTP_400_BAD_REQUEST, 'Falha durante o processo de conversar com o chat')
 
         if response.content and 'Pergunta do usuário:' in response.content['user_input']:
-            response.content['user_input'] = message
+            response.content['user_input'] = payload.message
 
         return JSONResponse(
             status_code=response.status,
@@ -50,17 +51,17 @@ async def init_chat(message: Annotated[str, Body()], session: SessionDep, model:
             media_type="application/json"
         )
 
-@_router.post('/chats/predict/{id}')
-async def predict_actions(id: str, action: Literal['meeting', 'client']):
+@_router.post('/predict')
+async def predict_actions(payload: Annotated[ChatPredictRequest, Body()]):
     try:
-        if action not in ['meeting', 'client']:
+        if payload.action not in ['meeting', 'client']:
             raise HTTPException(status.HTTP_400_BAD_REQUEST, 'Action deve ser "meeting" ou "client"')
 
         response = None
-        if action == 'client':
-            response = await _gen.generate_client_prediction(id)
-        elif action == 'meeting':
-            response = await _gen.generate_meeting_prediction(id)
+        if payload.action == 'client':
+            response = await _gen.generate_client_prediction(payload.chat_id)
+        elif payload.action == 'meeting':
+            response = await _gen.generate_meeting_prediction(payload.chat_id)
 
         if response is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, 'Nenhuma previsão foi gerada')
