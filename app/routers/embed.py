@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Body
 from fastapi.responses import JSONResponse
 from traceback import format_exc
 from app.types.response_model import ResponseModel, ResponseBaseModel
@@ -9,7 +9,7 @@ from app.deps import ModelDep
 from app.services.generic_service import get_sqlmodel_by_id, add_sqlmodel_embeddings
 from app.models.client import client as cl_model
 from app.models.meeting import meeting as mt_model
-from typing import Literal
+from typing import Literal, Annotated
 from fastapi.encoders import jsonable_encoder
 
 _router = APIRouter()
@@ -68,12 +68,12 @@ def embed_transcript(transcript_id: str, session: SessionDep, ai_model: ModelDep
 
 
 @_router.post("/client", response_model=ResponseBaseModel, status_code=status.HTTP_200_OK)
-def embed_client(client_id: str, session: SessionDep, ai_model: ModelDep) -> JSONResponse:
+def embed_client(client_id: Annotated[str, Body()], session: SessionDep, ai_model: ModelDep) -> JSONResponse:
     '''Cria embeddings com base no histórico do cliente salvo'''
     return __embed_meeting_or_client('client', client_id, session, ai_model)
 
 @_router.post("/meeting", response_model=ResponseBaseModel, status_code=status.HTTP_200_OK)
-def embed_meeting(meeting_id: str, session: SessionDep, ai_model: ModelDep) -> JSONResponse:
+def embed_meeting(meeting_id: Annotated[str, Body()], session: SessionDep, ai_model: ModelDep) -> JSONResponse:
     '''Cria embeddings com base no histórico da reunião salva'''
     return __embed_meeting_or_client('meeting', meeting_id, session, ai_model)
 
@@ -112,12 +112,12 @@ def __embed_meeting_or_client(model_name: Literal['client', 'meeting'], model_id
         if not result.is_valid:
             raise HTTPException(
                 status_code=result.status,
-                detail=jsonable_encoder(result)
+                detail=result.message
             )
         
         return JSONResponse(
             status_code=status.HTTP_200_OK,
-            content=jsonable_encoder(result),
+            content=result.message,
             media_type="application/json"
         )
     except HTTPException as httpex:
