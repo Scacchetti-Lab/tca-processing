@@ -23,7 +23,7 @@ class meetings(SQLModel, table=True):
     priority: INSIGHT_PRIORITY | None = Field(sa_column=Column(String(255), nullable=True), default=None)
     is_deleted: bool = Field(default=False)
     embeddings: list[float] | None = Field(default=None, sa_column=Column(Vector(384), nullable=True))
-    client_representor: str
+    client_represent: str
 
     transcript_id: UUID = Field(foreign_key='transcripts.id', unique=True, index=True)
     transcript: 'transcripts' = Relationship(back_populates='meeting')

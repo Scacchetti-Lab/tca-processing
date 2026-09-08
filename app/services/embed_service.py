@@ -40,7 +40,6 @@ def add_transcript_embeddings(transcript_id: str, chunks: list[str], embeddings,
         raise ex
 
 def generate_chunks(transcript_sliced: str):
-
     text_splitter = RecursiveCharacterTextSplitter(
         separators=['\n\n', '\n', '. ', ' ', ''],
         chunk_size=800,
@@ -51,16 +50,13 @@ def generate_chunks(transcript_sliced: str):
 
 def _format_meeting_to_embbeding(raw_meeting: meetings):
     partes = [
-        f"Reunião: {raw_meeting.title}",
+        f"Reunião: {raw_meeting.title if raw_meeting.title else "Título não definido"}",
         f"Cliente: {raw_meeting.client.name}",
-        f"Tipo: {raw_meeting.type}",
+        f"Sumário: {raw_meeting.summary if raw_meeting.summary else "Sumário não definido"}",
+        f"Representante do Cliente: {raw_meeting.client_represent}",
+        f"Média de Performance: {"Não Definida" if not raw_meeting.performance_avg or raw_meeting.performance_avg <= 0 else raw_meeting.performance_avg}",
+        f"Prioridade: {raw_meeting.priority}",
     ]
-    if raw_meeting.priority:
-        partes.append(f"Prioridade: {raw_meeting.priority}")
-    if raw_meeting.summary:
-        partes.append(f"Resumo: {raw_meeting.summary}")
-    if raw_meeting.feedback:
-        partes.append(f"Feedback: {raw_meeting.feedback}")
     return ". ".join(partes)
 
 
@@ -71,6 +67,7 @@ def _format_client_to_embbeding(raw_client: clients):
         f"Faturamento mensal de R$ {raw_client.revenue}. "
         f"Status atual do relacionamento: {raw_client.status}. "
         f"Histórico de reuniões: {resumos}"
+        f"Contato do cliente: {raw_client.email if raw_client.email else raw_client.phone if raw_client else "Não definido"}"
     )
     
 def generate_embeds(raw_model, model: SentenceTransformer):

@@ -18,6 +18,8 @@ class clients(SQLModel, table=True):
     address_id: UUID
     revenue: float = Field(decimal_places=2)
     status: COMPANY_STATUS = Field(sa_column=Column(String(255), nullable=False))
+    email: str
+    phone: str
     
     embeddings: list[float] = Field(sa_column=Column(Vector(384), nullable=False))
 
