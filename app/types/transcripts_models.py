@@ -1,7 +1,7 @@
 from __future__ import annotations
 from pydantic import BaseModel
 from typing import List, Literal
-from app.constants.transcript import COMPANY_STATUS, FINANCIAL_STATUS, INSIGHT_PRIORITY, PROFILE_TYPES, SCORE_TYPE, TRANSCRIPT_STATUS
+from app.constants.transcript import COMPANY_STATUS, FINANCIAL_STATUS, INSIGHT_PRIORITY, PROFILE_TYPES, SCORE_TYPE, TRANSCRIPT_DB_STATUS
 from app.types.client_models import ClientContext
 
 class Stakeholder(BaseModel):
@@ -53,7 +53,7 @@ class AnalayseCustomerMetrics(BaseModel):
     leads_converted: int
 
 class TranscriptAnalyse(BaseModel):
-    status: TRANSCRIPT_STATUS
+    status: TRANSCRIPT_DB_STATUS
     basic_description: TranscriptDescription
     analytic: Analytics
 

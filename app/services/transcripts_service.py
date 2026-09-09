@@ -39,7 +39,7 @@ def get_by_dataframe(id: str):
     return str(df_trs['ANON_TRANSCRICAO'].values[0])
 
 
-def get_transcript_by_id(id: str, session: SessionDep | None = None, use_db: bool = False) -> str | None:
+def get_transcript_by_id(id: str, session: SessionDep | None = None, use_db: bool = True) -> str | None:
     ''''Partindo de um Id especificado, retorne a transcrição'''
     
     if not use_db:

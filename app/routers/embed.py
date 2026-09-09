@@ -126,7 +126,7 @@ def __embed_meeting_or_client(model_name: Literal['client', 'meeting'], model_id
         print(format_exc())
         return JSONResponse(
             status_code=httpex.status_code,
-            content=ResponseModel(status=httpex.status_code, message=httpex.detail, is_valid=False).__dict__,
+            content=httpex.detail,
             media_type="application/json"
         )
     except Exception as ex:
@@ -135,6 +135,6 @@ def __embed_meeting_or_client(model_name: Literal['client', 'meeting'], model_id
         print(format_exc())
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content=ResponseModel(status=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Ocorreu um erro inesperado durante o processamento").__dict__,
+            content="Ocorreu um erro inesperado durante o processamento",
             media_type="application/json"
         )
