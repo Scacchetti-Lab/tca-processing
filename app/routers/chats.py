@@ -26,14 +26,11 @@ async def init_chat(payload: Annotated[ChatMessagesResponse, Body()], session: S
         response = await _ch.make_ai_response(payload.message, session, model, payload.previous_interact_id)
 
         if not response.is_valid:
-            raise HTTPException(status.HTTP_400_BAD_REQUEST, 'Falha durante o processo de conversar com o chat')
-
-        if response.content and 'Pergunta do usuário:' in response.content['user_input']:
-            response.content['user_input'] = payload.message
+            raise HTTPException(response.status, response.message or 'Falha durante o processo de conversar com o chat')
 
         return JSONResponse(
             status_code=response.status,
-            content=response.content,
+            content=response.__dict__,
             media_type="application/json",
         )
     except HTTPException as httpex:
@@ -47,7 +44,7 @@ async def init_chat(payload: Annotated[ChatMessagesResponse, Body()], session: S
         print(traceback.format_exc())
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content=_ResponseModel(status=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Ocorreu um erro inesperado durante o processamento").__dict__,
+            content=_ResponseModel(status=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Ocorreu um erro inesperado durante o processamento", is_valid=False).__dict__,
             media_type="application/json"
         )
 

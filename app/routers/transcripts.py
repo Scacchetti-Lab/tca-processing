@@ -42,7 +42,7 @@ async def process_transcript(request: Annotated[TranscriptRequest, Body()], sess
             client=request.client_context
         )
         
-        gen_analysed = gen.analyse_transcript(payload)
+        gen_analysed = await gen.analyse_transcript(payload)
         TranscriptAnalyse.model_validate(gen_analysed.content) 
 
         return JSONResponse(

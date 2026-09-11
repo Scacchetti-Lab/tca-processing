@@ -1,3 +1,4 @@
+import asyncio
 from time import sleep
 from os import getenv as __getenv
 from traceback import format_exc
@@ -6,27 +7,28 @@ from google import genai as __genai
 from google.genai.interactions import Interaction
 from google.genai.errors import ClientError
 from app.constants.ai_context import CHATBOT_CONTEXT as _CHATBOT_CONTEXT
-from app.types.chats_models import ChatBotResponse as _ChatBotResponse
+from app.types.chats_models import ChatBotResponse as _ChatBotResponse, ChatBotFirstResponse as _ChatBotFirstResponse
 from app.types.transcripts_models import TranscriptAnalyse, TranscriptPayload
 from app.types.response_model import ResponseModel
 from fastapi import status
 
 from app.helpers.create_context import build_extraction_system_instruction
 
-__load_dotenv() 
+__load_dotenv()
 
 __GEMINI_API_KEY = __getenv("GEMINI_API_KEY")
 __GEMINI_MODEL_NAME = __getenv("GEMINI_MODEL_NAME")
 
 __client = __genai.Client(api_key=__GEMINI_API_KEY)
 
-def analyse_transcript(payload: TranscriptPayload | str, tries: int = 3) -> ResponseModel:
+
+async def analyse_transcript(payload: TranscriptPayload | str, tries: int = 3) -> ResponseModel:
     if isinstance(payload, str):
         payload = TranscriptPayload(transcript=payload)
 
     for i in range(tries):
         try:
-            transcript_analysed = _create_transcript_interactor(payload)
+            transcript_analysed = await _create_transcript_interactor(payload)
             return ResponseModel(
                 status=status.HTTP_200_OK,
                 content=transcript_analysed.model_dump(mode='json'),
@@ -57,32 +59,30 @@ def analyse_transcript(payload: TranscriptPayload | str, tries: int = 3) -> Resp
         message="Não foi possível gerar a análise após múltiplas tentativas."
     )
 
+
 async def send_message(user_message: str, previous_interaction_id: str | None = None) -> ResponseModel:
     try:
-        response = await _create_response_interactor(user_message, previous_interaction_id, False)
-
-        if not response:
-            return ResponseModel(
-                status=status.HTTP_404_NOT_FOUND,
-                message='AI não enviou uma resposta, ocorreu algum problema inesperado.',
-                is_valid=True
-            )
-
+        response = await _create_response_interactor(user_message, previous_interaction_id)
         return ResponseModel(
             status=status.HTTP_200_OK,
-            content=_ChatBotResponse(
-                    user_input=user_message,
-                    answer=response.answer,
-                    previous_interaction_id=response.previous_interaction_id
-                ).model_dump(mode='json'),
-            is_valid=True
+            content=response.model_dump(mode='json'),
+            is_valid=True,
         )
-    except Exception as ex:
-        print(ex)
-        return ResponseModel(
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-                message=f"[ERRO]: Ocorreu um erro inesperado\n- {ex}"
+    except ClientError as ex:
+        if ex.code == 429:
+            return ResponseModel(
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+                message="Limite de requisições da IA atingido. Tente novamente em instantes.",
+                is_valid=False,
             )
+        raise
+    except (RuntimeError, ValueError) as ex:
+        return ResponseModel(
+            status=status.HTTP_502_BAD_GATEWAY,
+            message=f"A IA não retornou uma resposta válida: {ex}",
+            is_valid=False,
+        )
+
 
 async def generate_client_prediction(client_id: str):
     '''Gera uma previsão sobre o cliente partindo do ID especificado e o que esperar de seu futuro com a empresa'''
@@ -92,6 +92,7 @@ async def generate_client_prediction(client_id: str):
         is_valid=True
     )
 
+
 async def generate_meeting_prediction(meeting_id: str):
     '''Gera uma previsão sobre a reunião a seguir partindo do ID especificado e o que esperar de seu futuro com a empresa'''
     return ResponseModel(
@@ -100,25 +101,28 @@ async def generate_meeting_prediction(meeting_id: str):
         is_valid=True
     )
 
-def _create_transcript_interactor(payload: TranscriptPayload) -> TranscriptAnalyse:
+
+async def _create_transcript_interactor(payload: TranscriptPayload) -> TranscriptAnalyse:
     '''Cria um interactor custom e próprio para analíse de transcrições, sendo necessário informar:\n
         @request: str = Transcricão pura
     '''
     prompt = f'Analise a seguinte transcrição de reunião e retorne o JSON estruturado conforme instruído:\n\n{payload.transcript}'
     context = build_extraction_system_instruction(payload.profile, payload.client)
-    
-    interaction = __client.interactions.create(
-        model=__GEMINI_MODEL_NAME,
-        input=prompt,
-        generation_config={"thinking_level": "medium", "temperature": 0.2},
-        response_format={
-            "type": "text",
-            "mime_type": "application/json",
-            "schema": TranscriptAnalyse.model_json_schema()
-        },
-        system_instruction=context,
-        store=False,
-    )
+
+    interaction = await asyncio.gather(
+        __client.aio.interactions.create(
+            model=__GEMINI_MODEL_NAME,
+            input=prompt,
+            generation_config={"thinking_level": "medium", "temperature": 0.2},
+            response_format={
+                "type": "text",
+                "mime_type": "application/json",
+                "schema": TranscriptAnalyse.model_json_schema()
+            },
+            system_instruction=context,
+            store=False,
+        )
+    ) 
 
     if not isinstance(interaction, Interaction):
         raise TypeError("Resposta inesperada da API: esperava Interaction, recebeu Stream.")
@@ -128,39 +132,86 @@ def _create_transcript_interactor(payload: TranscriptPayload) -> TranscriptAnaly
 
     return TranscriptAnalyse.model_validate_json(interaction.output_text)
 
-async def _create_response_interactor(prompt: str, interaction_id: str | None, stream: bool = True):
-    ''' Cria um interactor que servirá para continuar a conversa anteriormente começada, com base no Id do estado fornecido no model, um request (mensagem do usuário) e se será assíncrono ou não a resposta'''
-    interaction = __client.interactions.create(
-        model=__GEMINI_MODEL_NAME,
-        input=prompt,
-        previous_interaction_id=interaction_id,
-        generation_config={
-            "thinking-level": "medium",
-            "temperature": 0.5
-        },
-        store=True,
-        system_instruction=_CHATBOT_CONTEXT,
-        stream=stream
+
+async def _create_response_interactor(
+    prompt: str, interaction_id: str | None
+) -> "_ChatBotResponse | _ChatBotFirstResponse":
+    is_first_message = interaction_id is None
+    generation_config = {"thinking_level": "low", "temperature": 0.5}
+
+    if is_first_message:
+        interaction, title = await asyncio.gather(
+            __client.aio.interactions.create(
+                model=__GEMINI_MODEL_NAME,
+                input=prompt,
+                previous_interaction_id=interaction_id,
+                generation_config=generation_config,
+                store=True,
+                system_instruction=_CHATBOT_CONTEXT,
+                stream=False,
+            ),
+            generate_session_title(prompt),
+        )
+    else:
+        interaction = await __client.aio.interactions.create(
+            model=__GEMINI_MODEL_NAME,
+            input=prompt,
+            previous_interaction_id=interaction_id,
+            generation_config=generation_config,
+            store=True,
+            system_instruction=_CHATBOT_CONTEXT,
+            stream=False,
+        )
+        title = None
+
+    if not isinstance(interaction, Interaction):
+        raise RuntimeError("Tipo retornado pela IA é inválido.")
+    if not interaction.output_text:
+        raise ValueError("A IA não retornou conteúdo de texto na resposta do chat.")
+
+    tokens = (
+        interaction.usage.total_tokens
+        if interaction.usage and interaction.usage.total_tokens
+        else 0
     )
 
-    ai_response = _ChatBotResponse(user_input=prompt, answer='', previous_interaction_id='')
-    
-    if isinstance(interaction, Interaction):
-        if interaction.output_text is None:
-            raise ValueError("A IA não retornou conteúdo de texto na análise da transcrição.")
-        ai_response.answer = interaction.output_text
-        ai_response.previous_interaction_id = interaction.id
-    else:
-        for event in interaction:
-            if event.event_type == "step.delta":
-                if event.delta.type == "text":
-                    ai_response.answer = event.delta.text
-            elif event.event_type == "response.completed":
-                ai_response.previous_interaction_id = event.interaction.id
-            elif event.event_type == "error":
-                raise ValueError(f"Erro no streaming: {event}")
+    if is_first_message:
+        return _ChatBotFirstResponse(
+            title=title,
+            reply=interaction.output_text,
+            previous_interaction_id=interaction.id,
+            tokens_used=tokens,
+        )
 
-    if (not ai_response.answer):
-        return None
+    return _ChatBotResponse(
+        reply=interaction.output_text,
+        previous_interaction_id=interaction.id,
+        tokens_used=tokens,
+    )
 
-    return ai_response
+
+async def generate_session_title(first_user_msg: str) -> str:
+    """
+    Gera o título com base só na mensagem do usuário -- permite rodar em
+    paralelo com a resposta principal na primeira mensagem da sessão.
+    Nunca deixa a criação da sessão falhar por causa do título: em caso de
+    erro, devolve um título genérico em vez de propagar a exceção.
+    """
+    try:
+        interaction = await __client.aio.interactions.create(
+            model=__GEMINI_MODEL_NAME,
+            input=first_user_msg,
+            system_instruction=(
+                "Gere um título curto (até 6 palavras) que identifique o assunto "
+                "da conversa que está prestes a começar, com base na primeira "
+                "mensagem do usuário. Responda APENAS com o título, sem aspas, "
+                "sem pontuação final."
+            ),
+            generation_config={"thinking_level": "low", "temperature": 0.3},
+            store=False,
+        )
+        if isinstance(interaction, Interaction) and interaction.output_text:
+            return interaction.output_text.strip()
+    except Exception:
+        pass
+    return "Nova conversa"

@@ -6,10 +6,15 @@ class InteractionCreateModel(BaseModel):
     interaction_id: str | None
 
 class ChatBotResponse(BaseModel):
-    user_input: str
-    answer: str
+    reply: str
     previous_interaction_id: str | None
+    tokens_used: int
 
+class ChatBotFirstResponse(BaseModel):
+    title: str | None
+    reply: str
+    previous_interaction_id: str | None
+    tokens_used: int
 
 class ChatPredictRequest(BaseModel):
     chat_id: str

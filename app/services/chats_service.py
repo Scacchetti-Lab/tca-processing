@@ -1,4 +1,5 @@
-from uuid import UUID
+import asyncio
+import traceback
 from app.db_connect import SessionDep
 from app.helpers.is_valid_json import is_valid_json
 from app.repository.transcript import TranscriptRepository
@@ -9,21 +10,23 @@ from fastapi import status
 from app.deps import ModelDep
 from json import dumps
 
-async def make_ai_response(message: str, session: SessionDep, model: ModelDep, previous_id: str | None = None):
+async def make_ai_response(message: str, session: SessionDep, model: ModelDep, previous_id: str | None = None) -> ResponseModel:
     try:
-        transcript_contexts = search_transcripts_relationated(message, session, model)
+        transcript_contexts = await asyncio.to_thread(
+            search_transcripts_relationated, message, session, model
+        )
 
         if not is_valid_json(transcript_contexts):
-             message = __make_rag_input(message, transcript_contexts)
+            message = __make_rag_input(message, transcript_contexts)
 
-        response = await send_message(message, previous_id)
-        return response
+        return await send_message(message, previous_id)
+
     except Exception as ex:
-        print(ex)
+        print(traceback.format_exc())
         return ResponseModel(
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-                message=f"[ERRO]: Ocorreu um erro inesperado\n- {ex}"
-            )
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            message=f"[ERRO]: Ocorreu um erro inesperado\n- {ex}",
+        )
 
 def search_transcripts_relationated(prompt: str, session: SessionDep, model: ModelDep) -> str:
     transcript_repository = TranscriptRepository(session)
