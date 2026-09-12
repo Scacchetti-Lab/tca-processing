@@ -16,12 +16,12 @@ from typing import Annotated
 router = APIRouter()
 
 @router.post("/process", response_model=ResponseBaseModel, status_code=status.HTTP_201_CREATED)
-async def process_transcript(request: Annotated[TranscriptRequest, Body()], session: SessionDep, use_db: bool = True) -> JSONResponse:
+async def process_transcript(request: Annotated[TranscriptRequest, Body()], session: SessionDep) -> JSONResponse:
     try:
         if (request.profile not in ['SALESPERSON', 'DIRECTOR', 'MANAGER']):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='O perfil enviado é inválido.')
 
-        transcript_data = trs.get_transcript_by_id(request.transcript_id, session, use_db)
+        transcript_data = trs.get_transcript_by_id(request.transcript_id, session)
 
         if transcript_data is None:
             raise HTTPException(

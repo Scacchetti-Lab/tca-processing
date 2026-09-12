@@ -1,7 +1,5 @@
 import re as _re
 from cleantext import clean as __clean
-import pandas as _pd
-from os import getcwd as _getcwd, getenv
 from dotenv import load_dotenv
 from typing import TYPE_CHECKING
 from app.helpers.is_valid_uuid import is_valid_uuid
@@ -26,24 +24,21 @@ _ANON_PLACEHOLDER = "§ANON{}§"
 if TYPE_CHECKING:
     from app.db_connect import SessionDep
 
-def get_by_dataframe(id: str):
-    if (not str.isnumeric(id)):
-        return None
+# def get_by_dataframe(id: str):
+#     if (not str.isnumeric(id)):
+#         return None
     
-    df = _pd.read_json(f'{_getcwd()}/app/seed/anon_transcription.json')
-    df_trs = df[df['ID_MEETING'] == int(id)]
+#     df = _pd.read_json(f'{_getcwd()}/app/seed/anon_transcription.json')
+#     df_trs = df[df['ID_MEETING'] == int(id)]
 
-    if df_trs.empty: 
-        return None
+#     if df_trs.empty: 
+#         return None
 
-    return str(df_trs['ANON_TRANSCRICAO'].values[0])
+#     return str(df_trs['ANON_TRANSCRICAO'].values[0])
 
 
-def get_transcript_by_id(id: str, session: SessionDep | None = None, use_db: bool = True) -> str | None:
+def get_transcript_by_id(id: str, session: SessionDep | None = None) -> str | None:
     ''''Partindo de um Id especificado, retorne a transcrição'''
-    
-    if not use_db:
-        return get_by_dataframe(id)
 
     if session is None:
         raise ValueError('Variável session é null')

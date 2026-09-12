@@ -1,8 +1,16 @@
 from typing import Annotated
 from fastapi import Depends
 from sentence_transformers import SentenceTransformer
+from dotenv import load_dotenv
+from os import getenv
 
-model: SentenceTransformer | None = None
+load_dotenv()
+hf_token = getenv('HF_TOKEN')
+
+model = SentenceTransformer(
+    'sentence-transformers/all-MiniLM-L6-v2',
+    token=hf_token 
+)
 
 def get_model() -> SentenceTransformer:
     if model is None:
