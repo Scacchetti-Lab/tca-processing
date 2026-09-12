@@ -139,7 +139,7 @@ IDENTIFICAÇÃO DA REUNIÃO (basic_description)
   * name: nome da pessoa como aparece na transcrição. Se a transcrição usar apenas identificadores genéricos (ex: "Locutor 57"), use esse identificador como nome.
   * role: cargo ou função da pessoa, quando mencionado ou inferível do contexto (ex: "Gerente de TI", "Executivo de Contas", "Especialista de Produto"). Se não houver informação, retorne null.
   * side: de qual lado a pessoa está.
-    - TOTVS: representantes da empresa fornecedora (vendedores, especialistas de produto, executivos de conta, pré-vendas).
+    - COMPANY: representantes da empresa fornecedora (vendedores, especialistas de produto, executivos de conta, pré-vendas).
     - CLIENT: representantes da empresa cliente (quem está avaliando ou contratando a solução).
     - UNKNOWN: use quando a transcrição não permitir determinar o lado com segurança. É comum em transcrições que identificam falantes apenas como "Locutor N" sem contexto suficiente. Prefira UNKNOWN a chutar -- uma atribuição errada distorce quem é responsabilizado pela condução da reunião.
 

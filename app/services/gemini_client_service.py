@@ -109,8 +109,7 @@ async def _create_transcript_interactor(payload: TranscriptPayload) -> Transcrip
     prompt = f'Analise a seguinte transcrição de reunião e retorne o JSON estruturado conforme instruído:\n\n{payload.transcript}'
     context = build_extraction_system_instruction(payload.profile, payload.client)
 
-    interaction = await asyncio.gather(
-        __client.aio.interactions.create(
+    interaction = await __client.aio.interactions.create(
             model=__GEMINI_MODEL_NAME,
             input=prompt,
             generation_config={"thinking_level": "medium", "temperature": 0.2},
@@ -122,10 +121,9 @@ async def _create_transcript_interactor(payload: TranscriptPayload) -> Transcrip
             system_instruction=context,
             store=False,
         )
-    ) 
 
     if not isinstance(interaction, Interaction):
-        raise TypeError("Resposta inesperada da API: esperava Interaction, recebeu Stream.")
+        raise TypeError(f"Resposta inesperada da API: esperava Interaction, recebeu {type(interaction).__name__}.")
 
     if interaction.output_text is None:
         raise ValueError("A IA não retornou conteúdo de texto na análise da transcrição.")

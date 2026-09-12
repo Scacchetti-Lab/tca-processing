@@ -7,7 +7,7 @@ from app.types.client_models import ClientContext
 class Stakeholder(BaseModel):
     name: str
     role: str | None = None
-    side: Literal['CLIENT', 'TOTVS', 'UNKNOWN']
+    side: Literal['CLIENT', 'COMPANY', 'UNKNOWN']
 
 class Insights(BaseModel):    
     priority: INSIGHT_PRIORITY
