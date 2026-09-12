@@ -6,7 +6,7 @@ from fastapi import Depends
 
 load_dotenv()
 
-__connection_string = getenv('PG_CONNECTIONSTRING_MODEL')
+__connection_string = getenv('DB_HOST')
 
 if (not __connection_string):
     raise ValueError("A string de conexão com o banco de dados é nula.")

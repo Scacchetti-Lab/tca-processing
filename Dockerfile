@@ -1,4 +1,6 @@
-FROM python:3.14-slim
+# Dockerfile — Microserviço Python (FastAPI) para Railway
+
+FROM python:3.12-slim
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -7,6 +9,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY pyproject.toml uv.lock* ./
 RUN pip install uv --no-cache-dir && uv sync --frozen --no-dev
+
+ENV PATH="/app/.venv/bin:$PATH"
 
 COPY . .
 
