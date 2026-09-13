@@ -36,15 +36,6 @@ class meetings(SQLModel, table=True):
 
     strategic_analyse: 'meeting_strategic_analyses' = Relationship(back_populates='meeting')
     performance_analyse: 'meeting_performance_analyses' = Relationship(back_populates='meeting')
-    employees: list['meeting_employees'] = Relationship(back_populates='meeting')
-
-class meeting_employees(SQLModel, table=True):
-    id: UUID = Field(default_factory=uuid4, primary_key=True)
-    feedback_tip: str
-
-    meeting_id: UUID = Field(foreign_key='meetings.id', index=True)
-    meeting: meetings = Relationship(back_populates='employees')
-    user_id: UUID
 
 class meeting_strategic_analyses(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
@@ -58,6 +49,7 @@ class meeting_strategic_analyses(SQLModel, table=True):
     financial_impact_status: FINANCIAL_STATUS = Field(sa_column=Column(String(255), nullable=False))
     created_at: datetime = Field(default_factory=datetime.now)
     feedback: str
+    tips: str
 
     meeting_id: UUID = Field(foreign_key='meetings.id', unique=True, index=True)
     meeting: meetings = Relationship(back_populates='strategic_analyse')

@@ -13,7 +13,7 @@ from fastapi.responses import JSONResponse
 from app.types.chats_models import *
 from app.types.response_model import ResponseBaseModel as _ResponseBaseModel, ResponseModel as _ResponseModel
 import app.services.chats_service as _ch
-import app.services.gemini_client_service as _gen
+import app.services.predit_service as _pd
 from typing import Annotated
 from app.db_connect import SessionDep
 from app.deps import ModelDep
@@ -45,43 +45,5 @@ async def init_chat(payload: Annotated[ChatMessagesResponse, Body()], session: S
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content=_ResponseModel(status=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Ocorreu um erro inesperado durante o processamento", is_valid=False).__dict__,
-            media_type="application/json"
-        )
-
-@_router.post('/predict')
-async def predict_actions(payload: Annotated[ChatPredictRequest, Body()]):
-    try:
-        if payload.action not in ['meeting', 'client']:
-            raise HTTPException(status.HTTP_400_BAD_REQUEST, 'Action deve ser "meeting" ou "client"')
-
-        response = None
-        if payload.action == 'client':
-            response = await _gen.generate_client_prediction(payload.chat_id)
-        elif payload.action == 'meeting':
-            response = await _gen.generate_meeting_prediction(payload.chat_id)
-
-        if response is None:
-            raise HTTPException(status.HTTP_404_NOT_FOUND, 'Nenhuma previsão foi gerada')
-
-        if not response.is_valid:
-            raise HTTPException(status.HTTP_400_BAD_REQUEST, 'Ocorreu um erro durante a tentativa de continuar o chat')
-        
-        return JSONResponse(
-            status_code=response.status,
-            content=response.content,
-            media_type="application/json",
-        )
-    except HTTPException as httpex:
-        return JSONResponse(
-            status_code=httpex.status_code,
-            content=_ResponseModel(status=httpex.status_code, message=httpex.detail, is_valid=False).__dict__,
-            media_type='application/json'
-        )
-    except Exception as ex:
-        print(f'\033[1;31m[ERRO] {ex}\033[m')
-        print(traceback.format_exc())
-        return JSONResponse(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content=_ResponseModel(status=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Ocorreu um erro inesperado durante o processamento").__dict__,
             media_type="application/json"
         )

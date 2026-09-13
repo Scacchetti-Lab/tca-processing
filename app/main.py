@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.security import APIKeyHeader
 from sentence_transformers import SentenceTransformer
-from app.routers import chats, embed, transcripts
+from app.routers import chats, embed, transcripts, predict
 from starlette.middleware.gzip import GZipMiddleware
 from contextlib import asynccontextmanager
 from app.exceptions.exceptions import validation_exception_handler, custom_http_exception_handler
@@ -50,3 +50,4 @@ def root():
 app.include_router(transcripts.router, prefix="/v1/transcript", tags=["Transcript Routes"], dependencies=[Depends(api_key_header)])
 app.include_router(chats._router, prefix="/v1/chat", tags=["AI Chat Routes"], dependencies=[Depends(api_key_header)])
 app.include_router(embed._router, prefix="/v1/embed", tags=["Embedding Routes"], dependencies=[Depends(api_key_header)])
+app.include_router(predict._router, prefix="/v1/predict", tags=["Predict Routes"], dependencies=[Depends(api_key_header)])

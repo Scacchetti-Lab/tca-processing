@@ -7,12 +7,14 @@ from google import genai as __genai
 from google.genai.interactions import Interaction
 from google.genai.errors import ClientError
 from app.constants.ai_context import CHATBOT_CONTEXT as _CHATBOT_CONTEXT
+from app.db_connect import SessionDep
+from app.helpers.contexts.predict_meeting import build_meeting_prediction_instruction
 from app.types.chats_models import ChatBotResponse as _ChatBotResponse, ChatBotFirstResponse as _ChatBotFirstResponse
 from app.types.transcripts_models import TranscriptAnalyse, TranscriptPayload
 from app.types.response_model import ResponseModel
 from fastapi import status
 
-from app.helpers.create_context import build_extraction_system_instruction
+from app.helpers.contexts.transcript_context import build_extraction_system_instruction
 
 __load_dotenv()
 
@@ -84,22 +86,39 @@ async def send_message(user_message: str, previous_interaction_id: str | None = 
         )
 
 
-async def generate_client_prediction(client_id: str):
-    '''Gera uma previsão sobre o cliente partindo do ID especificado e o que esperar de seu futuro com a empresa'''
-    return ResponseModel(
-        status=status.HTTP_201_CREATED,
-        content={'result': 'teste'},
-        is_valid=True
-    )
+async def generate_client_prediction(context: str):
+    # interaction = await __client.aio.interactions.create(
+    #     model=__GEMINI_MODEL_NAME,
+    #     input=context,
+    #     system_instruction=build_meeting_prediction_instruction(),
+    #     generation_config={"thinking_level": "low", "temperature": 0.4},
+    #     store=False,
+    # )
+
+    # if not isinstance(interaction, Interaction):
+    #     raise TypeError(f"Resposta inesperada da API: esperava Interaction, recebeu {type(interaction).__name__}.")
+
+    # if not interaction.output_text:
+    #     raise ValueError("A IA não retornou uma previsão.")
+    # return interaction.output_text.strip()
+    pass
 
 
-async def generate_meeting_prediction(meeting_id: str):
-    '''Gera uma previsão sobre a reunião a seguir partindo do ID especificado e o que esperar de seu futuro com a empresa'''
-    return ResponseModel(
-        status=status.HTTP_201_CREATED,
-        content={'result': 'teste'},
-        is_valid=True
+async def generate_meeting_prediction(context: str):
+    interaction = await __client.aio.interactions.create(
+        model=__GEMINI_MODEL_NAME,
+        input=context,
+        system_instruction=build_meeting_prediction_instruction(),
+        generation_config={"thinking_level": "low", "temperature": 0.4},
+        store=False,
     )
+
+    if not isinstance(interaction, Interaction):
+        raise TypeError(f"Resposta inesperada da API: esperava Interaction, recebeu {type(interaction).__name__}.")
+
+    if not interaction.output_text:
+        raise ValueError("A IA não retornou uma previsão.")
+    return interaction.output_text.strip()
 
 
 async def _create_transcript_interactor(payload: TranscriptPayload) -> TranscriptAnalyse:
@@ -168,8 +187,8 @@ async def _create_response_interactor(
         raise ValueError("A IA não retornou conteúdo de texto na resposta do chat.")
 
     tokens = (
-        interaction.usage.total_tokens
-        if interaction.usage and interaction.usage.total_tokens
+        interaction.usage.total_output_tokens
+        if interaction.usage and interaction.usage.total_output_tokens
         else 0
     )
 

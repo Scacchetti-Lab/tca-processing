@@ -1,5 +1,5 @@
 import secrets
-from fastapi import Request, HTTPException, status
+from fastapi import Request, status
 from dotenv import load_dotenv
 from os import getenv
 
