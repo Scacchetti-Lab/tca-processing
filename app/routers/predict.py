@@ -21,7 +21,7 @@ async def predict_next_meeting(payload: Annotated[MeetingPredictRequest, Body()]
 
         return JSONResponse(
             status_code=status.HTTP_201_CREATED,
-            content=_ResponseModel(status.HTTP_201_CREATED, content={"predict": predict_data}, message="Previsão de reunião criada.").__dict__,
+            content=_ResponseModel(status.HTTP_201_CREATED, content={"predict": predict_data}, message="Previsão de reunião criada.", is_valid=True).__dict__,
             media_type="application/json",
         )
     except HTTPException as httpex:
@@ -49,7 +49,7 @@ async def predict_client_status(payload: Annotated[ClientPredictRequest, Body()]
             
         return JSONResponse(
             status_code=status.HTTP_201_CREATED,
-            content=_ResponseModel(status.HTTP_201_CREATED, content={"predict": predict_data}, message="Previsão de cliente criada.").__dict__,
+            content=_ResponseModel(status.HTTP_201_CREATED, content={"predict": predict_data}, message="Previsão de cliente criada.", is_valid=True).__dict__,
             media_type="application/json",
         )
     except HTTPException as httpex:
