@@ -1,11 +1,10 @@
 from app.types.predict_models import MeetingPerformanceDto, MeetingStrategicDto
 
 
-def __make_predict_meeting_context(
+def make_predict_meeting_context(
     client,
     performance_history: list["MeetingPerformanceDto"],
     strategic_history: list["MeetingStrategicDto"],
-    root_company_name: str = 'TOTVS'
 ) -> str:
     """
     Monta o texto que vai como 'input' da chamada ao Gemini para prever uma
