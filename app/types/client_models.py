@@ -8,4 +8,4 @@ from app.constants.transcript import COMPANY_STATUS
 class ClientContext(BaseModel):
     name: str
     status: COMPANY_STATUS
-    previous_meetings: List[str] = []
+    previous_meetings: List[str] | None = []

@@ -2,6 +2,41 @@ from app.constants.keywords import PRODUCTS, POSITIVE_WORDS, NEGATIVE_WORDS
 from app.types.client_models import ClientContext
 
 
+def build_strategic_block():
+    return """=========================================================
+BLOCO 'strategic' -- AVALIAÇÃO DO CLIENTE
+=========================================================
+
+strategic.metrics:
+
+- company_performance (ESCALA 0 a 10): potencial de crescimento do cliente. Sinais positivos: menções de expansão, aumento de escopo, orçamento maior, novas unidades/filiais. Sinais negativos: manutenção do status quo, redução de orçamento.
+
+- closing_probability (ESCALA 0 a 10): probabilidade de fechamento de negócio. Sinais altos: data concreta de fechamento, aprovação interna já obtida, próximo passo é o contrato. Sinais baixos: "vamos pensar", falta de orçamento, remarcação sem data.
+
+- flexibility (ESCALA 0 a 10): flexibilidade do cliente diante de erros ou imprevistos da empresa fornecedora. Sinais positivos: paciência após falha relatada, reconhecimento do contexto difícil, disposição a renegociar prazo. Sinais negativos: reclamação repetida sobre o mesmo ponto, tom de impaciência, cobrança rígida.
+
+- risk (ESCALA 0 a 10): risco de cancelamento. Sinais: menção a concorrentes (veja lista de produtos acima), insatisfação expressa, ameaça de não renovar, tom de frustração recorrente. IMPORTANTE: este critério SUBTRAI do score -- nota alta significa risco alto, ou seja, resultado ruim para a empresa.
+
+strategic.financial:
+
+- financial_impact (ESCALA 0 a 10): nota qualitativa do impacto financeiro estimado do relacionamento com esse cliente, baseada em valores/volumes mencionados na reunião.
+
+- financial_impact_value (VALOR MONETÁRIO EM REAIS, número decimal): valor concreto em risco ou em oportunidade identificado na reunião, quando houver menção explícita ou inferência razoável de cifras (ex: valor de contrato, mensalidade, volume de licenças). Se nenhum valor for mencionável, retorne 0. NÃO confunda com o campo acima: aqui é o valor em reais, não uma nota de 0 a 10.
+
+- financial_impact_status (MINIMAL/LOW/MEDIUM/HIGH/SEVERAL): classificação qualitativa do impacto financeiro.
+
+strategic.company_status (GOOD/OK/CRITIC/BAD): status geral do cliente com base no conjunto de sinais observados.
+
+strategic.insights: siga a seção INSIGHTS abaixo, focando no relacionamento com o cliente -- riscos a mitigar, oportunidades a explorar, sinais positivos a sustentar.
+
+strategic.feedback: siga a seção FEEDBACK abaixo, analisando o cliente e a saúde do relacionamento."""
+
+def set_process_status(scope: str):
+    context = """STATUS DO PROCESSAMENTO ('status'): use OK se a análise foi concluída normalmente. ANALYZING nunca deve ser retornado por você (é um estado intermediário do sistema). Use ERROR se a transcrição estiver vazia, corrompida ou sem conteúdo analisável."""
+    if scope == "INTERNAL":
+        return "STATUS DO PROCESSAMENTO ('status'): use OK por padrão."
+    return context
+
 def build_client_context_block(client: ClientContext | None) -> str:
     """
     Monta o bloco de contexto do cliente que entra no system_instruction.
@@ -67,7 +102,7 @@ COMO USAR ESTE CONTEXTO:
 """
 
 
-def build_extraction_system_instruction(profile: str | None = None, client: ClientContext | None = None) -> str:
+def build_extraction_system_instruction(scope: str, profile: str | None = None, client: ClientContext | None = None) -> str:
     """
     Monta o system_instruction de extracao dinamicamente, incorporando as listas
     de vocabulario de referencia. Isso evita hardcodar as listas dentro de um JSON
@@ -96,7 +131,7 @@ def build_extraction_system_instruction(profile: str | None = None, client: Clie
 
     contexto_cliente = build_client_context_block(client)
 
-    return f"""Você é um analista de reuniões comerciais especializado em extrair informações estruturadas de transcrições. Sua tarefa é analisar a transcrição fornecida e retornar SOMENTE um JSON válido seguindo exatamente o schema definido, sem nenhum texto adicional antes ou depois.
+    return f"""Você é um analista de reuniões especializado em extrair informações estruturadas de transcrições. Sua tarefa é analisar a transcrição fornecida e retornar SOMENTE um JSON válido seguindo exatamente o schema definido, sem nenhum texto adicional antes ou depois.
 {foco_perfil}
 REGRAS GERAIS:
 
@@ -121,11 +156,11 @@ VOCABULÁRIO DE REFERÊNCIA -- SINAIS POSITIVOS:
 VOCABULÁRIO DE REFERÊNCIA -- SINAIS NEGATIVOS:
 {negativos_str}
 
-IMPORTANTE SOBRE AS LISTAS ACIMA: elas são um ponto de partida para calibrar sua análise, NÃO uma lista exaustiva nem uma regra rígida de correspondência exata. Você deve continuar usando seu entendimento pleno de linguagem natural, incluindo:
+{"""IMPORTANTE SOBRE AS LISTAS ACIMA: elas são um ponto de partida para calibrar sua análise, NÃO uma lista exaustiva nem uma regra rígida de correspondência exata. Você deve continuar usando seu entendimento pleno de linguagem natural, incluindo:
 - Negação: "não tivemos nenhum problema" contém a palavra "problema", mas o sentido é positivo. A negação sempre inverte ou anula o sinal da palavra.
 - Contexto e intensidade: "ficamos um pouco preocupados" é mais brando que "estamos extremamente preocupados", mesmo usando a mesma palavra-base.
 - Ambiguidade dependente de contexto: a palavra "urgente" está na lista de sinais negativos (geralmente indica problema não resolvido), mas em frases como "queremos fechar com urgência" ela sinaliza uma OPORTUNIDADE de fechamento rápido, não um risco. Julgue pelo contexto da frase, não pela palavra isolada.
-- Sinônimos e variações fora da lista: palavras equivalentes que não estão listadas (ex: "encantado", "péssimo") devem ser tratadas com o mesmo peso que teriam se estivessem na lista.
+- Sinônimos e variações fora da lista: palavras equivalentes que não estão listadas (ex: "encantado", "péssimo") devem ser tratadas com o mesmo peso que teriam se estivessem na lista.""" if scope == "EXTERNAL" else ""}
 
 {contexto_cliente}
 =========================================================
@@ -149,35 +184,9 @@ IDENTIFICAÇÃO DA REUNIÃO (basic_description)
 
 - meeting_summary: resumo objetivo do que foi discutido, o que ficou decidido e quais são os próximos passos.
 
-STATUS DO PROCESSAMENTO ('status'): use OK se a análise foi concluída normalmente. ANALYZING nunca deve ser retornado por você (é um estado intermediário do sistema). Use ERROR se a transcrição estiver vazia, corrompida ou sem conteúdo analisável.
+{set_process_status(scope)}
 
-=========================================================
-BLOCO 'strategic' -- AVALIAÇÃO DO CLIENTE
-=========================================================
-
-strategic.metrics:
-
-- company_performance (ESCALA 0 a 10): potencial de crescimento do cliente. Sinais positivos: menções de expansão, aumento de escopo, orçamento maior, novas unidades/filiais. Sinais negativos: manutenção do status quo, redução de orçamento.
-
-- closing_probability (ESCALA 0 a 10): probabilidade de fechamento de negócio. Sinais altos: data concreta de fechamento, aprovação interna já obtida, próximo passo é o contrato. Sinais baixos: "vamos pensar", falta de orçamento, remarcação sem data.
-
-- flexibility (ESCALA 0 a 10): flexibilidade do cliente diante de erros ou imprevistos da empresa fornecedora. Sinais positivos: paciência após falha relatada, reconhecimento do contexto difícil, disposição a renegociar prazo. Sinais negativos: reclamação repetida sobre o mesmo ponto, tom de impaciência, cobrança rígida.
-
-- risk (ESCALA 0 a 10): risco de cancelamento. Sinais: menção a concorrentes (veja lista de produtos acima), insatisfação expressa, ameaça de não renovar, tom de frustração recorrente. IMPORTANTE: este critério SUBTRAI do score -- nota alta significa risco alto, ou seja, resultado ruim para a empresa.
-
-strategic.financial:
-
-- financial_impact (ESCALA 0 a 10): nota qualitativa do impacto financeiro estimado do relacionamento com esse cliente, baseada em valores/volumes mencionados na reunião.
-
-- financial_impact_value (VALOR MONETÁRIO EM REAIS, número decimal): valor concreto em risco ou em oportunidade identificado na reunião, quando houver menção explícita ou inferência razoável de cifras (ex: valor de contrato, mensalidade, volume de licenças). Se nenhum valor for mencionável, retorne 0. NÃO confunda com o campo acima: aqui é o valor em reais, não uma nota de 0 a 10.
-
-- financial_impact_status (MINIMAL/LOW/MEDIUM/HIGH/SEVERAL): classificação qualitativa do impacto financeiro.
-
-strategic.company_status (GOOD/OK/CRITIC/BAD): status geral do cliente com base no conjunto de sinais observados.
-
-strategic.insights: siga a seção INSIGHTS abaixo, focando no relacionamento com o cliente -- riscos a mitigar, oportunidades a explorar, sinais positivos a sustentar.
-
-strategic.feedback: siga a seção FEEDBACK abaixo, analisando o cliente e a saúde do relacionamento.
+{build_strategic_block() if scope == "EXTERNAL" else ""}
 
 =========================================================
 BLOCO 'performance' -- AVALIAÇÃO DOS VENDEDORES

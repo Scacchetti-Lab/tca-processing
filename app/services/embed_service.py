@@ -49,15 +49,16 @@ def generate_chunks(transcript_sliced: str):
     return text_splitter.split_text(transcript_sliced)
 
 def _format_meeting_to_embbeding(raw_meeting: meetings):
-    partes = [
+    parts = [
         f"Reunião: {raw_meeting.title if raw_meeting.title else "Título não definido"}",
-        f"Cliente: {raw_meeting.client.name}",
         f"Sumário: {raw_meeting.summary if raw_meeting.summary else "Sumário não definido"}",
-        f"Representante do Cliente: {raw_meeting.client_represent}",
         f"Média de Performance: {"Não Definida" if not raw_meeting.performance_avg or raw_meeting.performance_avg <= 0 else raw_meeting.performance_avg}",
-        f"Prioridade: {raw_meeting.priority}",
+        f"Prioridade: {raw_meeting.priority}"
     ]
-    return ". ".join(partes)
+    if raw_meeting.client:
+        parts.append(f"Cliente: {raw_meeting.client.name}")
+        parts.append(f"Representante do Cliente: {raw_meeting.client_represent}")
+    return ". ".join(parts)
 
 
 def _format_client_to_embbeding(raw_client: clients):

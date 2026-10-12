@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 from uuid import UUID
+from app.types.response_model import RespositoryModel
 
 if TYPE_CHECKING:
     from app.models.transcript import transcript_chunks
-    from app.types.response_model import RespositoryModel
 
 
 

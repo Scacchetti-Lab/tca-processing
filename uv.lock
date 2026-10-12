@@ -2320,6 +2320,7 @@ dependencies = [
     { name = "rich" },
     { name = "sentence-transformers" },
     { name = "sqlmodel" },
+    { name = "uvicorn", extra = ["standard"] },
 ]
 
 [package.metadata]
@@ -2335,6 +2336,7 @@ requires-dist = [
     { name = "rich", specifier = ">=13.7.1" },
     { name = "sentence-transformers", specifier = ">=6.0.0" },
     { name = "sqlmodel", specifier = ">=0.0.39" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.52.4" },
 ]
 
 [[package]]

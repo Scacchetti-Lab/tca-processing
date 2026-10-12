@@ -58,7 +58,7 @@ class TranscriptAnalyse(BaseModel):
     analytic: Analytics
 
 class Analytics(BaseModel):
-    strategic: AnalayseStrategicDefinitions
+    strategic: AnalayseStrategicDefinitions | None = None
     performance: AnalayseCustomerDefinitions
 
 class TranscriptReturnJson(BaseModel):
@@ -72,8 +72,10 @@ class TranscriptPayload(BaseModel):
     transcript: str
     profile: PROFILE_TYPES | None = None
     client: ClientContext | None = None
+    scope: Literal["EXTERNAL", "INTERNAL"]
 
 class TranscriptRequest(BaseModel):
     transcript_id: str
     profile: PROFILE_TYPES | None = None
     client_context: ClientContext | None = None
+    scope: Literal["EXTERNAL", "INTERNAL"]

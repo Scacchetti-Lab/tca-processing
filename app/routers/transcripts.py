@@ -1,8 +1,3 @@
-'''
---- Transcrições ---
-POST   /transcripts/process         # extração via Gemini (faz a limpeza e extração de infos com AI)
-'''
-
 from fastapi import APIRouter, Body, HTTPException, status
 from fastapi.responses import JSONResponse
 from app.services import gemini_client_service as gen, transcripts_service as trs
@@ -39,7 +34,8 @@ async def process_transcript(request: Annotated[TranscriptRequest, Body()], sess
         payload = TranscriptPayload(
             profile=request.profile,
             transcript=cleaned_text,
-            client=request.client_context
+            client=request.client_context,
+            scope=request.scope
         )
         
         gen_analysed = await gen.analyse_transcript(payload)

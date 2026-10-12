@@ -1,11 +1,11 @@
 import re as _re
 from cleantext import clean as __clean
 from dotenv import load_dotenv
-from typing import TYPE_CHECKING
 from app.helpers.is_valid_uuid import is_valid_uuid
 from uuid import UUID
 from app.repository.transcript import TranscriptRepository
 from app.models.transcript import transcripts
+from app.db_connect import SessionDep
 
 load_dotenv()
 
@@ -19,10 +19,6 @@ _RE_ANON_TAG = _re.compile(r'\[[A-ZÀ-Ú_ ]+\]')
 
 _LOCUTOR_PLACEHOLDER = "§LOC{}§"
 _ANON_PLACEHOLDER = "§ANON{}§"
-
-
-if TYPE_CHECKING:
-    from app.db_connect import SessionDep
 
 # def get_by_dataframe(id: str):
 #     if (not str.isnumeric(id)):

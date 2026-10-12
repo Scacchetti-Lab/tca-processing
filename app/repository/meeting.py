@@ -3,7 +3,7 @@ from sqlmodel import select, col
 from app.db_connect import SessionDep
 from app.repository.interface.meeting import MeetingInterface
 from app.types.predict_models import MeetingPerformanceDto, MeetingStrategicDto
-from app.models.meeting import meetings, meeting_performance_analyses as mpa, meeting_strategic_analyses as msa
+from app.models.meeting import meetings, meeting_client_details, meeting_performance_analyses as mpa, meeting_strategic_analyses as msa
 
 class MeetingRepository(MeetingInterface):
     def __init__(self, session: SessionDep) -> None:
@@ -21,7 +21,8 @@ class MeetingRepository(MeetingInterface):
         statement = (
             select(mpa)
             .join(meetings)
-            .where(meetings.client_id == cl_id)
+            .join(meeting_client_details, col(meeting_client_details.meeting_id) == meetings.id)
+            .where(meeting_client_details.client_id == cl_id)
             .order_by(col(meetings.scheduled).asc())
         )
         analyses = self.session.exec(statement).all()
@@ -43,7 +44,8 @@ class MeetingRepository(MeetingInterface):
         statement = (
             select(msa)
             .join(meetings)
-            .where(meetings.client_id == cl_id)
+            .join(meeting_client_details, col(meeting_client_details.meeting_id) == meetings.id)
+            .where(meeting_client_details.client_id == cl_id)
             .order_by(col(meetings.scheduled).asc())
         )
         analyses = self.session.exec(statement)

@@ -26,7 +26,7 @@ __client = __genai.Client(api_key=__GEMINI_API_KEY)
 
 async def analyse_transcript(payload: TranscriptPayload | str, tries: int = 3) -> ResponseModel:
     if isinstance(payload, str):
-        payload = TranscriptPayload(transcript=payload)
+        payload = TranscriptPayload(transcript=payload, scope="EXTERNAL")
 
     for i in range(tries):
         try:
@@ -126,7 +126,7 @@ async def _create_transcript_interactor(payload: TranscriptPayload) -> Transcrip
         @request: str = Transcricão pura
     '''
     prompt = f'Analise a seguinte transcrição de reunião e retorne o JSON estruturado conforme instruído:\n\n{payload.transcript}'
-    context = build_extraction_system_instruction(payload.profile, payload.client)
+    context = build_extraction_system_instruction(payload.scope, payload.profile, payload.client)
 
     interaction = await __client.aio.interactions.create(
             model=__GEMINI_MODEL_NAME,

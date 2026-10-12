@@ -4,6 +4,7 @@ from sqlmodel import SQLModel, Relationship, Field
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import Column, String
 from app.constants.transcript import COMPANY_STATUS
+from app.models.meeting import meeting_client_details
 from uuid import uuid4, UUID
 from typing import TYPE_CHECKING
 
@@ -25,7 +26,7 @@ class clients(SQLModel, table=True):
     
     embeddings: list[float] = Field(sa_column=Column(Vector(384), nullable=False))
 
-    meetings: list['meetings'] = Relationship(back_populates='client')
+    meetings: list['meetings'] = Relationship(back_populates='client', link_model=meeting_client_details)
     strategic_analyses: list['meeting_strategic_analyses'] = Relationship(back_populates='client')
 
 class client_analysis(SQLModel, table=True):

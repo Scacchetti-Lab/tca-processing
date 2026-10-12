@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import Column, String, UniqueConstraint
+from sqlalchemy import Column, String
 from sqlmodel import SQLModel, Field, Relationship
 from uuid import UUID, uuid4
 from app.constants.transcript import COMPANY_STATUS, FINANCIAL_STATUS, INSIGHT_PRIORITY
@@ -8,8 +8,13 @@ from datetime import datetime
 from typing import Literal
 
 if TYPE_CHECKING:
-    from models.client import clients
-    from models.transcript import transcripts
+    from app.models.client import clients
+    from app.models.transcript import transcripts
+
+class meeting_client_details(SQLModel, table=True):
+    meeting_id: UUID = Field(foreign_key='meetings.id', primary_key=True)
+    client_id: UUID = Field(foreign_key='clients.id', nullable=False, index=True)
+
 
 class meetings(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
@@ -18,7 +23,7 @@ class meetings(SQLModel, table=True):
     duration_min: int
     summary: str | None = Field(default=None, nullable=True)
     scheduled: datetime
-    status: Literal['SCHEDULED', 'IN_PROGRESS' 'CANCELLED', 'COMPLETED'] = Field(sa_column=Column(String(255), nullable=False), default='SCHEDULED')
+    status: Literal['SCHEDULED', 'IN_PROGRESS', 'CANCELLED', 'COMPLETED'] = Field(sa_column=Column(String(255), nullable=False), default='SCHEDULED')
     performance_avg: float | None = Field(default=None, nullable=True) # Porcentagem do desempenho da reunião
     priority: INSIGHT_PRIORITY | None = Field(sa_column=Column(String(255), nullable=True), default=None)
     is_deleted: bool = Field(default=False)
@@ -28,11 +33,11 @@ class meetings(SQLModel, table=True):
     transcript_id: UUID = Field(foreign_key='transcripts.id', unique=True, index=True)
     transcript: 'transcripts' = Relationship(back_populates='meeting')
 
-    client_id: UUID = Field(foreign_key='clients.id', nullable=False)
-    client: 'clients' = Relationship(back_populates='meetings')
-
-    strategic_analyse: 'meeting_strategic_analyses' = Relationship(back_populates='meeting')
-    performance_analyse: 'meeting_performance_analyses' = Relationship(back_populates='meeting')
+    client: 'clients' = Relationship(
+        back_populates='meetings',
+        link_model=meeting_client_details,
+        sa_relationship_kwargs={'uselist': False},
+    )
 
     strategic_analyse: 'meeting_strategic_analyses' = Relationship(back_populates='meeting')
     performance_analyse: 'meeting_performance_analyses' = Relationship(back_populates='meeting')
