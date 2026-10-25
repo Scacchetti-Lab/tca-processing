@@ -27,3 +27,4 @@ class ClientPredictRequest(BaseModel):
 class ChatMessagesResponse(BaseModel):
     message: str
     previous_interact_id: str | None = None
+    chat_model: Literal["VOICE", "TEXT"] = "TEXT"

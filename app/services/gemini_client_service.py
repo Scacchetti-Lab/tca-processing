@@ -6,7 +6,6 @@ from dotenv import load_dotenv as __load_dotenv
 from google import genai as __genai
 from google.genai.interactions import Interaction
 from google.genai.errors import ClientError
-from app.constants.ai_context import CHATBOT_CONTEXT as _CHATBOT_CONTEXT
 from app.helpers.contexts.predict_client import build_client_prediction_instruction
 from app.helpers.contexts.predict_meeting import build_meeting_prediction_instruction
 from app.types.chats_models import ChatBotResponse as _ChatBotResponse, ChatBotFirstResponse as _ChatBotFirstResponse
@@ -62,9 +61,9 @@ async def analyse_transcript(payload: TranscriptPayload | str, tries: int = 3) -
     )
 
 
-async def send_message(user_message: str, previous_interaction_id: str | None = None) -> ResponseModel:
+async def send_message(user_message: str, context: str, previous_interaction_id: str | None = None) -> ResponseModel:
     try:
-        response = await _create_response_interactor(user_message, previous_interaction_id)
+        response = await _create_response_interactor(user_message, context, previous_interaction_id)
         return ResponseModel(
             status=status.HTTP_200_OK,
             content=response.model_dump(mode='json'),
@@ -151,7 +150,7 @@ async def _create_transcript_interactor(payload: TranscriptPayload) -> Transcrip
 
 
 async def _create_response_interactor(
-    prompt: str, interaction_id: str | None
+    prompt: str, context: str, interaction_id: str | None
 ) -> "_ChatBotResponse | _ChatBotFirstResponse":
     is_first_message = interaction_id is None
     generation_config = {"thinking_level": "low", "temperature": 0.5}
@@ -164,7 +163,7 @@ async def _create_response_interactor(
                 previous_interaction_id=interaction_id,
                 generation_config=generation_config,
                 store=True,
-                system_instruction=_CHATBOT_CONTEXT,
+                system_instruction=context,
                 stream=False,
             ),
             generate_session_title(prompt),
@@ -176,7 +175,7 @@ async def _create_response_interactor(
             previous_interaction_id=interaction_id,
             generation_config=generation_config,
             store=True,
-            system_instruction=_CHATBOT_CONTEXT,
+            system_instruction=context,
             stream=False,
         )
         title = None
