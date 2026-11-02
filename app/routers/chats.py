@@ -1,5 +1,7 @@
+from collections.abc import AsyncIterable
 import traceback
 from fastapi import APIRouter, Body, status, HTTPException
+from fastapi.sse import EventSourceResponse, ServerSentEvent
 from fastapi.responses import JSONResponse
 from app.types.chats_models import *
 from app.types.response_model import ResponseBaseModel as _ResponseBaseModel, ResponseModel as _ResponseModel
@@ -8,9 +10,10 @@ from typing import Annotated
 from app.db_connect import SessionDep
 from app.deps import ModelDep
 
-router = APIRouter()
+router_v1 = APIRouter()
+router_v2 = APIRouter()
 
-@router.post('/messages', response_model=_ResponseBaseModel, status_code=status.HTTP_200_OK)
+@router_v1.post('/messages', response_model=_ResponseBaseModel, status_code=status.HTTP_200_OK)
 async def init_chat(payload: Annotated[ChatMessagesResponse, Body()], session: SessionDep, model: ModelDep):
     try:
         response = await _ch.make_ai_response(payload, session, model)
@@ -37,3 +40,22 @@ async def init_chat(payload: Annotated[ChatMessagesResponse, Body()], session: S
             content=_ResponseModel(status=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Ocorreu um erro inesperado durante o processamento", is_valid=False).__dict__,
             media_type="application/json"
         )
+
+@router_v2.post('/stream/message', response_class=EventSourceResponse)
+async def ai_stream_chat(payload: Annotated[ChatMessagesResponse, Body()], session: SessionDep, model: ModelDep) -> AsyncIterable[ServerSentEvent]:
+    try:
+        response = await _ch.generate_response(payload, session, model)
+        new_id = None
+        async for item in response:
+            match item:
+                case TextChunk(text=text):
+                    yield ServerSentEvent(event="delta", data={"text": text})
+                case TitleReady(title=title):
+                    yield ServerSentEvent(event="title", data={"title": title})
+                case InteractionCreated(interaction_id=id):
+                    new_id = id
+
+        yield ServerSentEvent(event="done", data={"interaction_id": new_id})
+    except Exception:
+        print(traceback.format_exc())
+        yield ServerSentEvent(event="error", data={"message:": "Falha ao gerar resposta da LLM"})

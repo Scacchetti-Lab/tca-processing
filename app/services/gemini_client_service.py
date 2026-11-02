@@ -2,13 +2,14 @@ import asyncio
 from time import sleep
 from os import getenv as __getenv
 from traceback import format_exc
+from typing import Literal
 from dotenv import load_dotenv as __load_dotenv
 from google import genai as __genai
 from google.genai.interactions import Interaction
 from google.genai.errors import ClientError
 from app.helpers.contexts.predict_client import build_client_prediction_instruction
 from app.helpers.contexts.predict_meeting import build_meeting_prediction_instruction
-from app.types.chats_models import ChatBotResponse as _ChatBotResponse, ChatBotFirstResponse as _ChatBotFirstResponse
+from app.types.chats_models import ChatBotResponse as _ChatBotResponse, InteractionCreated, TextChunk, TitleReady
 from app.types.transcripts_models import TranscriptAnalyse, TranscriptPayload
 from app.types.response_model import ResponseModel
 from fastapi import status
@@ -84,6 +85,8 @@ async def send_message(user_message: str, context: str, previous_interaction_id:
             is_valid=False,
         )
 
+def send_stream_message(prompt: str, context: str, interact_id: str | None = None):    
+    return _stream_bot_message(prompt, context, interact_id)
 
 async def generate_client_prediction(context: str):
     interaction = await __client.aio.interactions.create(
@@ -149,9 +152,38 @@ async def _create_transcript_interactor(payload: TranscriptPayload) -> Transcrip
     return TranscriptAnalyse.model_validate_json(interaction.output_text)
 
 
-async def _create_response_interactor(
-    prompt: str, context: str, interaction_id: str | None
-) -> "_ChatBotResponse | _ChatBotFirstResponse":
+async def _stream_bot_message(prompt: str, context: str, interaction_id: str | None):
+    is_first_message = interaction_id is None
+    generation_config = {"thinking_level": "low", "temperature": 0.5}
+
+    task_title = None
+    if is_first_message:
+        task_title = asyncio.create_task(generate_session_title(prompt))
+
+    stream = await __client.aio.interactions.create(
+            model=__GEMINI_MODEL_NAME,
+            input=prompt,
+            previous_interaction_id=interaction_id,
+            generation_config=generation_config,
+            store=True,
+            system_instruction=context,
+            stream=True,
+        )
+
+    if task_title is not None and task_title.done():
+        yield TitleReady(task_title.result())
+
+    if isinstance(stream, Interaction):
+        raise TypeError(f"Resposta inesperada da API: esperava AsyncStream, recebeu {type(stream).__name__}.")
+
+    async for e in stream:
+        if e.event_type == "interaction.created":
+            yield InteractionCreated(e.interaction.id)
+        elif e.event_type == "step.delta":
+            if e.delta.type == "text":
+                yield TextChunk(e.delta.text)
+
+async def _create_response_interactor(prompt: str, context: str, interaction_id: str | None) -> _ChatBotResponse:
     is_first_message = interaction_id is None
     generation_config = {"thinking_level": "low", "temperature": 0.5}
 
@@ -192,7 +224,7 @@ async def _create_response_interactor(
     )
 
     if is_first_message:
-        return _ChatBotFirstResponse(
+        return _ChatBotResponse(
             title=title,
             reply=interaction.output_text,
             previous_interaction_id=interaction.id,

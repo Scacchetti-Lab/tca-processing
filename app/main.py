@@ -46,7 +46,8 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)  # comprime respostas acim
 def root():
     return {"status": "Ok", "project": "AI Totvs Commercial (tca-processing)", "version": "1.0.0"}
 
-app.include_router(transcripts.router, prefix="/v1/transcript", tags=["Transcript Routes"], dependencies=[Depends(api_key_header)])
-app.include_router(chats.router, prefix="/v1/chat", tags=["AI Chat Routes"], dependencies=[Depends(api_key_header)])
-app.include_router(embed._router, prefix="/v1/embed", tags=["Embedding Routes"], dependencies=[Depends(api_key_header)])
-app.include_router(predict._router, prefix="/v1/predict", tags=["Predict Routes"], dependencies=[Depends(api_key_header)])
+app.include_router(transcripts.router, prefix="/v1/transcript", tags=["Transcript"], dependencies=[Depends(api_key_header)])
+app.include_router(chats.router_v1, prefix="/v1/chat", tags=["AI Chat"], dependencies=[Depends(api_key_header)])
+app.include_router(chats.router_v2, prefix="/v2/chat", tags=["AI Chat"], dependencies=[Depends(api_key_header)])
+app.include_router(embed._router, prefix="/v1/embed", tags=["Embedding"], dependencies=[Depends(api_key_header)])
+app.include_router(predict._router, prefix="/v1/predict", tags=["Predict"], dependencies=[Depends(api_key_header)])

@@ -5,7 +5,7 @@ from app.helpers.is_valid_json import is_valid_json
 from app.repository.transcript import TranscriptRepository
 from app.types.chats_models import ChatMessagesResponse
 from app.types.response_model import ResponseModel
-from app.services.gemini_client_service import send_message
+from app.services.gemini_client_service import send_message, send_stream_message
 from app.services.embed_service import generate_embeds
 from fastapi import status
 from app.deps import ModelDep
@@ -19,7 +19,7 @@ async def make_ai_response(request: ChatMessagesResponse, session: SessionDep, m
         )
         base_context = ai.CHATBOT_VOICE_CONTEXT if request.chat_model == "VOICE" else ai.CHATBOT_TEXT_CONTEXT
 
-        if not is_valid_json(transcript_contexts):
+        if is_valid_json(transcript_contexts):
             request.message = __make_rag_input(request.message, transcript_contexts)
 
         return await send_message(request.message, base_context, request.previous_interact_id)
@@ -30,6 +30,15 @@ async def make_ai_response(request: ChatMessagesResponse, session: SessionDep, m
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             message=f"[ERRO]: Ocorreu um erro inesperado\n- {ex}",
         )
+
+async def generate_response(request: ChatMessagesResponse, session: SessionDep, model: ModelDep):
+    transcript_contexts = await asyncio.to_thread(search_transcripts_relationated, request.message, session, model)
+    base_context = ai.CHATBOT_VOICE_CONTEXT if request.chat_model == "VOICE" else ai.CHATBOT_TEXT_CONTEXT
+
+    if is_valid_json(transcript_contexts):
+        request.message = __make_rag_input(request.message, transcript_contexts)
+
+    return send_stream_message(request.message, base_context, request.previous_interact_id)
 
 def search_transcripts_relationated(prompt: str, session: SessionDep, model: ModelDep) -> str:
     transcript_repository = TranscriptRepository(session)
