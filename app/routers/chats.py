@@ -58,4 +58,4 @@ async def ai_stream_chat(payload: Annotated[ChatMessagesResponse, Body()], sessi
         yield ServerSentEvent(event="done", data={"interaction_id": new_id})
     except Exception:
         print(traceback.format_exc())
-        yield ServerSentEvent(event="error", data={"message:": "Falha ao gerar resposta da LLM"})
+        yield ServerSentEvent(event="error", data={"message": "Falha ao gerar resposta da LLM"})
